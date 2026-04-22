@@ -1,0 +1,35 @@
+class AuthController < ApplicationController
+  def register
+    user = User.new(user_params)
+
+    # TODO: El otro desarrollador implementará la lógica de:
+    # 1. Generar par de llaves RSA.
+    # 2. Cifrar la llave privada.
+    # user.public_key = ...
+    # user.encrypted_private_key = ...
+
+    if user.save
+      render json: { message: "Usuario registrado exitosamente", user_id: user.id }, status: :created
+    else
+      render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def login
+    user = User.find_by(email: params[:email])
+
+    # authenticate usa el has_secure_password (bcrypt) ya configurado
+    if user&.authenticate(params[:password])
+      # TODO: Emitir JWT
+      render json: { message: "Login exitoso", token: "JWT_PENDIENTE", user_id: user.id }, status: :ok
+    else
+      render json: { error: "Credenciales inválidas" }, status: :unauthorized
+    end
+  end
+
+  private
+
+  def user_params
+    params.permit(:email, :display_name, :password, :password_confirmation)
+  end
+end
