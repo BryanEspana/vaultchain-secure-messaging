@@ -2,11 +2,10 @@ class AuthController < ApplicationController
   def register
     user = User.new(user_params)
 
-    # TODO: El otro desarrollador implementará la lógica de:
-    # 1. Generar par de llaves RSA.
-    # 2. Cifrar la llave privada.
-    # user.public_key = ...
-    # user.encrypted_private_key = ...
+    # Generate RSA keys and encrypt private key with AES
+    crypto_keys = CryptoService.generate_keys(user_params[:pas3sword])
+    user.public_key = crypto_keys[:public_key]
+    user.encrypted_private_key = crypto_keys[:encrypted_private_key]
 
     if user.save
       render json: { message: "Usuario registrado exitosamente", user_id: user.id }, status: :created
