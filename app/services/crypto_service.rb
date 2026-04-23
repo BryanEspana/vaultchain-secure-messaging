@@ -18,9 +18,9 @@ class CryptoService
 
   private
 
-  # Encrypt private key using AES-256-CBC with PBKDF2-derived key
+  # Encrypt private key using AES-256-GCM with PBKDF2-derived key
   def self.encrypt_private_key(private_key_pem, password)
-    cipher = OpenSSL::Cipher.new('aes-256-cbc')
+    cipher = OpenSSL::Cipher.new('aes-256-gcm')
     cipher.encrypt
 
     # Derive key from password using PBKDF2 with 100,000 iterations
@@ -31,9 +31,10 @@ class CryptoService
     iv = cipher.random_iv
 
     encrypted = cipher.update(private_key_pem) + cipher.final
+    auth_tag = cipher.auth_tag
 
-    # Combine salt, IV, and encrypted data, then Base64 encode
-    combined = salt + iv + encrypted
+    # Combine salt, IV, auth_tag, and encrypted data, then Base64 encode
+    combined = salt + iv + auth_tag + encrypted
     Base64.strict_encode64(combined)
   end
 
@@ -41,18 +42,20 @@ class CryptoService
   def self.decrypt_private_key(encrypted_data, password)
     combined = Base64.strict_decode64(encrypted_data)
 
-    # Extract salt (first 16 bytes), IV (next 16 bytes), and encrypted data
+    # Extract salt (first 16 bytes), IV (next 16 bytes), auth_tag (next 16 bytes), and encrypted data
     salt = combined[0...16]
     iv = combined[16...32]
-    encrypted = combined[32..-1]
+    auth_tag = combined[32...48]
+    encrypted = combined[48..-1]
 
     # Derive same key from password using PBKDF2
     key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, 'SHA256')
 
-    cipher = OpenSSL::Cipher.new('aes-256-cbc')
+    cipher = OpenSSL::Cipher.new('aes-256-gcm')
     cipher.decrypt
     cipher.key = key
     cipher.iv = iv
+    cipher.auth_tag = auth_tag
 
     cipher.update(encrypted) + cipher.final
   end
