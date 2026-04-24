@@ -28,12 +28,15 @@ class CryptoService
     key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, "SHA256")
 
     cipher.key = key
-    iv = cipher.random_iv
+    # GCM 12-bytes 
+    iv = OpenSSL::Random.random_bytes(12)
+    cipher.iv = iv
 
     encrypted = cipher.update(private_key_pem) + cipher.final
     auth_tag = cipher.auth_tag
 
     # Combine salt, IV, auth_tag, and encrypted data, then Base64 encode
+    # Format: [Salt (16)] [IV (12)] [Auth_Tag (16)] [Encrypted Data]
     combined = salt + iv + auth_tag + encrypted
     Base64.strict_encode64(combined)
   end
@@ -42,7 +45,7 @@ class CryptoService
   def self.decrypt_private_key(encrypted_data, password)
     combined = Base64.strict_decode64(encrypted_data)
 
-    # Extract salt (first 16 bytes), IV (next 16 bytes), auth_tag (next 16 bytes), and encrypted data
+    # Extract salt (first 16 bytes), IV (next 12 bytes), auth_tag (next 16 bytes), and encrypted data
     salt = combined[0...16]
     iv = combined[16...28] # IV is 12 bytes for GCM
     auth_tag = combined[28...44]
