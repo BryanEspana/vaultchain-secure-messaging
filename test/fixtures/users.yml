@@ -1,17 +1,17 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  email: MyString
-  display_name: MyString
-  password_digest: MyString
-  public_key: MyText
-  encrypted_private_key: MyText
-  totp_secret: MyString
+  email: luffy@example.com
+  display_name: Luffy
+  password_digest: <%= BCrypt::Password.create("StrawHat123!") %>
+  public_key: test-public-key-one
+  encrypted_private_key: test-encrypted-private-key-one
+  totp_secret: test-totp-secret-one
 
 two:
-  email: MyString
-  display_name: MyString
-  password_digest: MyString
-  public_key: MyText
-  encrypted_private_key: MyText
-  totp_secret: MyString
+  email: zoro@example.com
+  display_name: Zoro
+  password_digest: <%= BCrypt::Password.create("ThreeSwords123!") %>
+  public_key: test-public-key-two
+  encrypted_private_key: test-encrypted-private-key-two
+  totp_secret: test-totp-secret-two
