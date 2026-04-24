@@ -3,7 +3,7 @@ class AuthController < ApplicationController
     user = User.new(user_params)
 
     # Generate RSA keys and encrypt private key with AES
-    crypto_keys = CryptoService.generate_keys(user_params[:pas3sword])
+    crypto_keys = CryptoService.generate_keys(user_params[:password])
     user.public_key = crypto_keys[:public_key]
     user.encrypted_private_key = crypto_keys[:encrypted_private_key]
 
