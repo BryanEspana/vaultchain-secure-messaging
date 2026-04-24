@@ -1,4 +1,4 @@
-require 'jwt'
+require "jwt"
 
 class JsonWebToken
   # El secreto se saca de las credenciales de Rails

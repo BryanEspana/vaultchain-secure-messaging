@@ -41,4 +41,4 @@ group :development, :test do
 end
 
 
-gem 'jwt'
+gem "jwt"
