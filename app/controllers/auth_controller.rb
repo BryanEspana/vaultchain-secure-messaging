@@ -19,8 +19,8 @@ class AuthController < ApplicationController
 
     # authenticate usa el has_secure_password (bcrypt) ya configurado
     if user&.authenticate(params[:password])
-      # TODO: Emitir JWT
-      render json: { message: "Login exitoso", token: "JWT_PENDIENTE", user_id: user.id }, status: :ok
+      token = JsonWebToken.encode(user_id: user.id)
+      render json: { message: "Login exitoso", token: token, user_id: user.id }, status: :ok
     else
       render json: { error: "Credenciales inválidas" }, status: :unauthorized
     end

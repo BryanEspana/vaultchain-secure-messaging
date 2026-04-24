@@ -44,9 +44,9 @@ class CryptoService
 
     # Extract salt (first 16 bytes), IV (next 16 bytes), auth_tag (next 16 bytes), and encrypted data
     salt = combined[0...16]
-    iv = combined[16...32]
-    auth_tag = combined[32...48]
-    encrypted = combined[48..-1]
+    iv = combined[16...28] # IV is 12 bytes for GCM
+    auth_tag = combined[28...44]
+    encrypted = combined[44..-1]
 
     # Derive same key from password using PBKDF2
     key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, 'SHA256')
