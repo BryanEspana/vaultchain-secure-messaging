@@ -1,5 +1,5 @@
-require 'openssl'
-require 'base64'
+require "openssl"
+require "base64"
 
 
 class CryptoService
@@ -20,12 +20,12 @@ class CryptoService
 
   # Encrypt private key using AES-256-GCM with PBKDF2-derived key
   def self.encrypt_private_key(private_key_pem, password)
-    cipher = OpenSSL::Cipher.new('aes-256-gcm')
+    cipher = OpenSSL::Cipher.new("aes-256-gcm")
     cipher.encrypt
 
     # Derive key from password using PBKDF2 with 100,000 iterations
     salt = OpenSSL::Random.random_bytes(16)
-    key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, 'SHA256')
+    key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, "SHA256")
 
     cipher.key = key
     iv = cipher.random_iv
@@ -49,9 +49,9 @@ class CryptoService
     encrypted = combined[44..-1]
 
     # Derive same key from password using PBKDF2
-    key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, 'SHA256')
+    key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, "SHA256")
 
-    cipher = OpenSSL::Cipher.new('aes-256-gcm')
+    cipher = OpenSSL::Cipher.new("aes-256-gcm")
     cipher.decrypt
     cipher.key = key
     cipher.iv = iv
