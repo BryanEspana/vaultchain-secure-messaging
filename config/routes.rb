@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  post "messages", to: "messages#create"
+  get "messages/:user_id", to: "messages#index"
+  post "groups", to: "groups#create"
   post "auth/register", to: "auth#register"
   post "auth/login", to: "auth#login"
   get "users/:id/key", to: "users#key"
