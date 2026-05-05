@@ -8,11 +8,21 @@ class MessagesController < ApplicationController
   end
 
   def create
-    # TODO: MessageEncryptionService - Logic for hybrid encryption or decryption simulation
-    # If the architecture is strictly E2EE, the client sends ciphertext and encrypted_key.
-    # The API just stores it.
-    
-    message = Message.new(message_params)
+    # Simulate hybrid encryption on server side for E2EE
+    if params[:plaintext].present?
+      recipient = User.find(params[:recipient_id])
+      encrypted_data = CryptoService.encrypt_message(params[:plaintext], recipient.public_key)
+      
+      message = Message.new(
+        sender_id: params[:sender_id],
+        recipient_id: params[:recipient_id],
+        group_id: params[:group_id],
+        **encrypted_data
+      )
+    else
+      # Fallback: assume client sent encrypted data
+      message = Message.new(message_params)
+    end
     
     if message.save
       render json: { message: "Mensaje enviado exitosamente", message_id: message.id }, status: :created
