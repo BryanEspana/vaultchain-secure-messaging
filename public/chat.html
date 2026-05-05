@@ -199,13 +199,10 @@
             
             <div class="messages-container" id="messagesContainer">
                 <div class="message received">
-                    <span class="lock-icon">🔒</span> Hola, ¿ya implementaste los endpoints de la Fase 2?
+                    <span class="lock-icon"></span> Hola, enviame un mensaje
                     <span class="message-meta">10:42 AM</span>
                 </div>
-                <div class="message sent">
-                    <span class="lock-icon">🔒</span> ¡Sí! Los controladores ya están listos, solo falta que el otro dev conecte el MessageEncryptionService.
-                    <span class="message-meta">10:45 AM</span>
-                </div>
+
             </div>
             
             <form class="input-area" id="messageForm">
@@ -222,6 +219,13 @@
             const text = input.value.trim();
             
             if (!text) return;
+
+            // Grab real user_id saved during login
+            const senderId = localStorage.getItem('vc_user_id');
+            if (!senderId) {
+                window.location.href = '/login.html';
+                return;
+            }
             
             // UI Update (Optimistic)
             const container = document.getElementById('messagesContainer');
@@ -235,25 +239,24 @@
             container.scrollTop = container.scrollHeight;
             input.value = '';
             
-            // API Call (Mocked parameters for now since encryption logic is pending)
+            // API Call - sender_id is the real logged-in user
             try {
                 const response = await fetch('/messages', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        sender_id: '00000000-0000-0000-0000-000000000000', // Mock UUID
-                        recipient_id: '11111111-1111-1111-1111-111111111111', // Mock UUID
-                        ciphertext: btoa(text), // Pseudo-encryption for UI
-                        encrypted_key: 'TODO',
-                        nonce: 'TODO',
-                        auth_tag: 'TODO'
+                        sender_id: senderId,
+                        ciphertext: btoa(text), // TODO: Replace with real E2EE encryption
+                        encrypted_key: 'PENDING_ENCRYPTION',
+                        nonce: 'PENDING',
+                        auth_tag: 'PENDING'
                     })
                 });
                 
                 if (response.ok) {
-                    msgDiv.querySelector('.message-meta').textContent = 'Entregado';
+                    msgDiv.querySelector('.message-meta').textContent = 'Entregado ✔';
                 } else {
-                    msgDiv.querySelector('.message-meta').textContent = 'Error';
+                    msgDiv.querySelector('.message-meta').textContent = 'Error al enviar';
                     msgDiv.querySelector('.message-meta').style.color = '#ef4444';
                 }
             } catch (err) {
