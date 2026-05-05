@@ -270,6 +270,9 @@
                     // Persist session info in localStorage
                     localStorage.setItem('vc_token', data.token);
                     localStorage.setItem('vc_user_id', data.user_id);
+                    if (data.encrypted_private_key) {
+                        localStorage.setItem('vc_encrypted_private_key', data.encrypted_private_key);
+                    }
 
                     msgEl.textContent = '✔ ¡Acceso concedido! Redirigiendo...';
                     msgEl.className = 'success';

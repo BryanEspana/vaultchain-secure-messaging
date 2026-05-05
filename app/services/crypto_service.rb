@@ -89,4 +89,30 @@ class CryptoService
       auth_tag: Base64.strict_encode64(auth_tag)
     }
   end
+
+  # Recipient-side hybrid decryption:
+  # RSA-OAEP recovers the AES key, then AES-256-GCM recovers the message.
+  def self.decrypt_message(encrypted_data, recipient_private_key_pem)
+    ciphertext = Base64.strict_decode64(encrypted_data.fetch(:ciphertext) { encrypted_data.fetch("ciphertext") })
+    encrypted_key = Base64.strict_decode64(encrypted_data.fetch(:encrypted_key) { encrypted_data.fetch("encrypted_key") })
+    nonce = Base64.strict_decode64(encrypted_data.fetch(:nonce) { encrypted_data.fetch("nonce") })
+    auth_tag = Base64.strict_decode64(encrypted_data.fetch(:auth_tag) { encrypted_data.fetch("auth_tag") })
+
+    rsa_private_key = OpenSSL::PKey::RSA.new(recipient_private_key_pem)
+    aes_key = rsa_private_key.private_decrypt(encrypted_key, OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING)
+
+    cipher = OpenSSL::Cipher.new("aes-256-gcm")
+    cipher.decrypt
+    cipher.key = aes_key
+    cipher.iv = nonce
+    cipher.auth_tag = auth_tag
+
+    cipher.update(ciphertext) + cipher.final
+  end
+
+  def self.decrypt_message_with_password(encrypted_data, encrypted_private_key, password)
+    recipient_private_key_pem = decrypt_private_key(encrypted_private_key, password)
+
+    decrypt_message(encrypted_data, recipient_private_key_pem)
+  end
 end

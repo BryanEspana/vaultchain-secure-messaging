@@ -164,6 +164,34 @@ class CryptoServiceTest < ActiveSupport::TestCase
       "Should be able to encrypt with public key and decrypt with private key"
   end
 
+  test "encrypt_message returns encrypted payload without plaintext" do
+    keys = CryptoService.generate_keys("recipient_password")
+    plaintext = "Mensaje secreto para el destinatario"
+    encrypted_message = CryptoService.encrypt_message(plaintext, keys[:public_key])
+
+    assert_equal %i[auth_tag ciphertext encrypted_key nonce], encrypted_message.keys.sort
+    assert_not_equal plaintext, encrypted_message[:ciphertext]
+    assert_not Base64.strict_decode64(encrypted_message[:ciphertext]).include?(plaintext)
+    assert_equal 12, Base64.strict_decode64(encrypted_message[:nonce]).bytesize
+    assert_equal 16, Base64.strict_decode64(encrypted_message[:auth_tag]).bytesize
+    assert Base64.strict_decode64(encrypted_message[:encrypted_key]).bytesize.positive?
+  end
+
+  test "decrypt_message_with_password recovers AES key and plaintext for recipient" do
+    password = "secure_password"
+    keys = CryptoService.generate_keys(password)
+    plaintext = "Mensaje secreto para el destinatario"
+    encrypted_message = CryptoService.encrypt_message(plaintext, keys[:public_key])
+
+    decrypted_message = CryptoService.decrypt_message_with_password(
+      encrypted_message,
+      keys[:encrypted_private_key],
+      password
+    )
+
+    assert_equal plaintext, decrypted_message
+  end
+
   # ============================================
   # Security & Edge Case Tests
   # ============================================
