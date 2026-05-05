@@ -90,6 +90,50 @@ class CryptoService
     }
   end
 
+  # ── Cifrado Grupal (Fase 2, Tarea 3) ─────────────────────────────────────
+  # Genera UNA clave AES-256 efímera, cifra el mensaje una sola vez con
+  # AES-256-GCM y luego cifra esa clave AES con la llave pública RSA-OAEP
+  # de CADA miembro del grupo. El resultado se almacena como JSON:
+  #   encrypted_key → '{"user_id_1":"<base64>","user_id_2":"<base64>",...}'
+  #
+  # @param plaintext [String] Texto plano del mensaje
+  # @param members   [Hash]   { user_id => public_key_pem, ... }
+  # @return [Hash]   { ciphertext:, encrypted_key:, nonce:, auth_tag: }
+  def self.encrypt_message_for_group(plaintext, members)
+    raise ArgumentError, "Se requiere al menos un miembro" if members.empty?
+
+    # 1. Generar clave AES-256 efímera (32 bytes)
+    aes_key = OpenSSL::Random.random_bytes(32)
+
+    # 2. Cifrar el plaintext con AES-256-GCM
+    cipher = OpenSSL::Cipher.new("aes-256-gcm")
+    cipher.encrypt
+    cipher.key = aes_key
+    nonce = OpenSSL::Random.random_bytes(12)
+    cipher.iv = nonce
+
+    ciphertext = cipher.update(plaintext) + cipher.final
+    auth_tag   = cipher.auth_tag
+
+    # 3. Cifrar la clave AES con la llave pública de cada miembro (RSA-OAEP)
+    encrypted_keys = {}
+    members.each do |user_id, public_key_pem|
+      next if public_key_pem.blank?
+
+      rsa_pub = OpenSSL::PKey::RSA.new(public_key_pem)
+      encrypted_keys[user_id] = Base64.strict_encode64(
+        rsa_pub.public_encrypt(aes_key, OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING)
+      )
+    end
+
+    {
+      ciphertext:    Base64.strict_encode64(ciphertext),
+      encrypted_key: encrypted_keys.to_json, # JSON con una entrada por miembro
+      nonce:         Base64.strict_encode64(nonce),
+      auth_tag:      Base64.strict_encode64(auth_tag)
+    }
+  end
+
   # Recipient-side hybrid decryption:
   # RSA-OAEP recovers the AES key, then AES-256-GCM recovers the message.
   def self.decrypt_message(encrypted_data, recipient_private_key_pem)
