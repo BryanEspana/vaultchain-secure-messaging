@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultChain - Chat Seguro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            width: 90%;
+            max-width: 1000px;
+            height: 85vh;
+            display: flex;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        
+        /* Sidebar (Contacts) */
+        .sidebar {
+            width: 300px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .contacts-list {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .contact {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .contact:hover, .contact.active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        /* Chat Area */
+        .chat-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .messages-container {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .message {
+            max-width: 70%;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            position: relative;
+        }
+        .message.received {
+            background: rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 0.25rem;
+        }
+        .message.sent {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .message-meta {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 0.5rem;
+            text-align: right;
+            display: block;
+        }
+        .lock-icon {
+            font-size: 0.8rem;
+            margin-right: 5px;
+            opacity: 0.8;
+        }
+        .decrypt-panel {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 0.75rem;
+            background: rgba(0, 0, 0, 0.16);
+        }
+        .decrypt-panel input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            outline: none;
+        }
+        .decrypt-panel button {
+            padding: 0 1rem;
+            border-radius: 0.75rem;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            color: #d1fae5;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .message.encrypted {
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        
+        /* Input Area */
+        .input-area {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .input-area input {
+            flex-grow: 1;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .input-area input:focus {
+            border-color: #8b5cf6;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .input-area button {
+            padding: 0 1.5rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(to right, #2563eb, #7c3aed);
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .input-area button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>VaultChain</h2>
+            </div>
+            <div class="contacts-list" id="contactsList">
+                <div class="contact active" data-recipient-id="">
+                    <div class="contact-avatar">SJ</div>
+                    <div class="contact-info">
+                        <div style="font-weight: 600;">Steve Jobs</div>
+                        <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">En línea</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-area">
+            <div class="chat-header">
+                <div class="contact-avatar">SJ</div>
+                <div>
+                    <h3 style="font-size: 1.1rem;">Steve Jobs</h3>
+                    <span style="font-size: 0.8rem; opacity: 0.7; color: #10b981;">Conexión Segura E2EE</span>
+                </div>
+            </div>
+
+            <div class="decrypt-panel">
+                <input type="password" id="privateKeyPassword" placeholder="Contraseña para descifrar mensajes recibidos" autocomplete="current-password">
+                <button type="button" id="decryptMessagesBtn">Descifrar</button>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <div class="message received">
+                    <span class="lock-icon"></span> Hola, enviame un mensaje
+                    <span class="message-meta">10:42 AM</span>
+                </div>
+
+            </div>
+            
+            <form class="input-area" id="messageForm">
+                <input type="text" id="messageInput" placeholder="Escribe un mensaje cifrado..." required autocomplete="off">
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+
+            for (let i = 0; i < bytes.byteLength; i += 1) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+
+            return btoa(binary);
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+
+            for (let i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+
+            return bytes.buffer;
+        }
+
+        function concatUint8Arrays(...arrays) {
+            const totalLength = arrays.reduce((total, array) => total + array.byteLength, 0);
+            const combined = new Uint8Array(totalLength);
+            let offset = 0;
+
+            arrays.forEach((array) => {
+                combined.set(array, offset);
+                offset += array.byteLength;
+            });
+
+            return combined;
+        }
+
+        function pemToArrayBuffer(pem) {
+            const base64 = pem
+                .replace(/-----BEGIN PUBLIC KEY-----/g, '')
+                .replace(/-----END PUBLIC KEY-----/g, '')
+                .replace(/\s+/g, '');
+
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+
+            for (let i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+
+            return bytes.buffer;
+        }
+
+        function getRecipientId() {
+            return localStorage.getItem('vc_recipient_id') || document.querySelector('.contact.active')?.dataset.recipientId || '';
+        }
+
+        async function fetchRecipientPublicKey(recipientId) {
+            const response = await fetch(`/users/${recipientId}/key`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'No se pudo obtener la llave pública del destinatario');
+            }
+
+            return data.public_key;
+        }
+
+        async function encryptMessageForRecipient(plaintext, recipientPublicKeyPem) {
+            const textEncoder = new TextEncoder();
+            const aesKey = await crypto.subtle.generateKey(
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt']
+            );
+            const nonce = crypto.getRandomValues(new Uint8Array(12));
+            const ciphertextBuffer = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: nonce },
+                aesKey,
+                textEncoder.encode(plaintext)
+            );
+            const rawAesKey = await crypto.subtle.exportKey('raw', aesKey);
+            const recipientKey = await crypto.subtle.importKey(
+                'spki',
+                pemToArrayBuffer(recipientPublicKeyPem),
+                { name: 'RSA-OAEP', hash: 'SHA-256' },
+                false,
+                ['encrypt']
+            );
+            const encryptedKeyBuffer = await crypto.subtle.encrypt(
+                { name: 'RSA-OAEP' },
+                recipientKey,
+                rawAesKey
+            );
+            const encryptedBytes = new Uint8Array(ciphertextBuffer);
+            const authTag = encryptedBytes.slice(encryptedBytes.length - 16);
+            const ciphertext = encryptedBytes.slice(0, encryptedBytes.length - 16);
+
+            return {
+                ciphertext: arrayBufferToBase64(ciphertext),
+                encrypted_key: arrayBufferToBase64(encryptedKeyBuffer),
+                nonce: arrayBufferToBase64(nonce),
+                auth_tag: arrayBufferToBase64(authTag)
+            };
+        }
+
+        function privateKeyPemToArrayBuffer(pem) {
+            const base64 = pem
+                .replace(/-----BEGIN [A-Z ]+-----/g, '')
+                .replace(/-----END [A-Z ]+-----/g, '')
+                .replace(/\s+/g, '');
+
+            return base64ToArrayBuffer(base64);
+        }
+
+        function encodeDerLength(length) {
+            if (length < 128) return new Uint8Array([length]);
+
+            const bytes = [];
+            let value = length;
+
+            while (value > 0) {
+                bytes.unshift(value & 0xff);
+                value >>= 8;
+            }
+
+            return new Uint8Array([0x80 | bytes.length, ...bytes]);
+        }
+
+        function encodeDerElement(tag, body) {
+            return concatUint8Arrays(new Uint8Array([tag]), encodeDerLength(body.byteLength), body);
+        }
+
+        function pkcs1PrivateKeyToPkcs8(pkcs1Der) {
+            const version = new Uint8Array([0x02, 0x01, 0x00]);
+            const rsaEncryptionAlgorithm = new Uint8Array([
+                0x30, 0x0d,
+                0x06, 0x09,
+                0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
+                0x05, 0x00
+            ]);
+            const privateKeyOctetString = encodeDerElement(0x04, pkcs1Der);
+
+            return encodeDerElement(
+                0x30,
+                concatUint8Arrays(version, rsaEncryptionAlgorithm, privateKeyOctetString)
+            ).buffer;
+        }
+
+        async function importRecipientPrivateKey(privateKeyPem) {
+            const privateKeyDer = new Uint8Array(privateKeyPemToArrayBuffer(privateKeyPem));
+            const privateKeyBuffer = privateKeyPem.includes('BEGIN RSA PRIVATE KEY')
+                ? pkcs1PrivateKeyToPkcs8(privateKeyDer)
+                : privateKeyDer.buffer;
+
+            return crypto.subtle.importKey(
+                'pkcs8',
+                privateKeyBuffer,
+                { name: 'RSA-OAEP', hash: 'SHA-256' },
+                false,
+                ['decrypt']
+            );
+        }
+
+        async function decryptStoredPrivateKey(encryptedPrivateKey, password) {
+            const combined = new Uint8Array(base64ToArrayBuffer(encryptedPrivateKey));
+            const salt = combined.slice(0, 16);
+            const iv = combined.slice(16, 28);
+            const authTag = combined.slice(28, 44);
+            const encryptedPem = combined.slice(44);
+            const passwordKey = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+            const aesKey = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                },
+                passwordKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+            );
+            const encryptedPemWithTag = concatUint8Arrays(encryptedPem, authTag);
+            const privateKeyBuffer = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv, tagLength: 128 },
+                aesKey,
+                encryptedPemWithTag
+            );
+
+            return new TextDecoder().decode(privateKeyBuffer);
+        }
+
+        async function decryptMessageForRecipient(encryptedPayload, recipientPrivateKey) {
+            const rawAesKey = await crypto.subtle.decrypt(
+                { name: 'RSA-OAEP' },
+                recipientPrivateKey,
+                base64ToArrayBuffer(encryptedPayload.encrypted_key)
+            );
+            const aesKey = await crypto.subtle.importKey(
+                'raw',
+                rawAesKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+            );
+            const ciphertext = new Uint8Array(base64ToArrayBuffer(encryptedPayload.ciphertext));
+            const authTag = new Uint8Array(base64ToArrayBuffer(encryptedPayload.auth_tag));
+            const nonce = new Uint8Array(base64ToArrayBuffer(encryptedPayload.nonce));
+            const ciphertextWithTag = concatUint8Arrays(ciphertext, authTag);
+            const plaintextBuffer = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: nonce, tagLength: 128 },
+                aesKey,
+                ciphertextWithTag
+            );
+
+            return new TextDecoder().decode(plaintextBuffer);
+        }
+
+        function setMessageContent(messageElement, lockText, bodyText, metaText) {
+            messageElement.textContent = '';
+
+            const lockIcon = document.createElement('span');
+            lockIcon.className = 'lock-icon';
+            lockIcon.textContent = lockText;
+
+            const body = document.createTextNode(` ${bodyText}`);
+            const meta = document.createElement('span');
+            meta.className = 'message-meta';
+            meta.textContent = metaText;
+
+            messageElement.append(lockIcon, body, meta);
+        }
+
+        function renderStoredMessage(message) {
+            const currentUserId = localStorage.getItem('vc_user_id');
+            const isReceived = message.recipient_id === currentUserId;
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${isReceived ? 'received encrypted' : 'sent'}`;
+
+            if (isReceived) {
+                messageElement.dataset.encryptedPayload = JSON.stringify({
+                    ciphertext: message.ciphertext,
+                    encrypted_key: message.encrypted_key,
+                    nonce: message.nonce,
+                    auth_tag: message.auth_tag
+                });
+                setMessageContent(messageElement, '🔒', 'Mensaje cifrado', 'Pendiente de descifrar');
+            } else {
+                setMessageContent(messageElement, '🔒', 'Mensaje enviado cifrado', 'Entregado');
+            }
+
+            return messageElement;
+        }
+
+        async function loadStoredMessages() {
+            const currentUserId = localStorage.getItem('vc_user_id');
+            if (!currentUserId) return;
+
+            const response = await fetch(`/messages/${currentUserId}`);
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const container = document.getElementById('messagesContainer');
+            container.textContent = '';
+
+            data.messages.forEach((message) => {
+                container.appendChild(renderStoredMessage(message));
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function decryptReceivedMessages() {
+            const encryptedPrivateKey = localStorage.getItem('vc_encrypted_private_key');
+            const password = document.getElementById('privateKeyPassword').value;
+
+            if (!encryptedPrivateKey) {
+                alert('Vuelve a iniciar sesión para cargar tu llave privada cifrada.');
+                return;
+            }
+
+            if (!password) {
+                alert('Ingresa tu contraseña para recuperar tu llave privada.');
+                return;
+            }
+
+            try {
+                const privateKeyPem = await decryptStoredPrivateKey(encryptedPrivateKey, password);
+                const recipientPrivateKey = await importRecipientPrivateKey(privateKeyPem);
+                const encryptedMessages = document.querySelectorAll('.message.received.encrypted');
+
+                for (const messageElement of encryptedMessages) {
+                    const encryptedPayload = JSON.parse(messageElement.dataset.encryptedPayload);
+                    const plaintext = await decryptMessageForRecipient(encryptedPayload, recipientPrivateKey);
+
+                    setMessageContent(messageElement, '🔓', plaintext, 'Descifrado');
+                    messageElement.classList.remove('encrypted');
+                }
+            } catch (err) {
+                alert('No se pudieron descifrar los mensajes. Revisa tu contraseña y la llave privada.');
+            }
+        }
+
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+
+            // Grab real user_id saved during login
+            const senderId = localStorage.getItem('vc_user_id');
+            if (!senderId) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const recipientId = getRecipientId();
+            if (!recipientId) {
+                alert('Falta configurar el destinatario. Define vc_recipient_id o asigna data-recipient-id al contacto activo.');
+                return;
+            }
+            
+            // UI Update (Optimistic)
+            const container = document.getElementById('messagesContainer');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message sent';
+            setMessageContent(msgDiv, '🔒', text, 'Enviando...');
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+            input.value = '';
+            
+            // API Call - sender_id is the real logged-in user
+            try {
+                const recipientPublicKey = await fetchRecipientPublicKey(recipientId);
+                const encryptedPayload = await encryptMessageForRecipient(text, recipientPublicKey);
+
+                const response = await fetch('/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender_id: senderId,
+                        recipient_id: recipientId,
+                        ...encryptedPayload
+                    })
+                });
+                
+                if (response.ok) {
+                    msgDiv.querySelector('.message-meta').textContent = 'Entregado ✔';
+                } else {
+                    msgDiv.querySelector('.message-meta').textContent = 'Error al enviar';
+                    msgDiv.querySelector('.message-meta').style.color = '#ef4444';
+                }
+            } catch (err) {
+                msgDiv.querySelector('.message-meta').textContent = 'Error de conexión';
+                msgDiv.querySelector('.message-meta').style.color = '#ef4444';
+            }
+        });
+
+        document.getElementById('decryptMessagesBtn').addEventListener('click', decryptReceivedMessages);
+        loadStoredMessages();
+    </script>
+</body>
+</html>

@@ -16,6 +16,7 @@ class AuthControllerTest < ActionDispatch::IntegrationTest
     assert_equal user.id, body["user_id"]
     assert body["token"].present?
     assert_not_equal "JWT_PENDIENTE", body["token"]
+    assert_equal user.encrypted_private_key, body["encrypted_private_key"]
 
     decoded_token = JsonWebToken.decode(body["token"])
     assert_equal user.id, decoded_token[:user_id]
