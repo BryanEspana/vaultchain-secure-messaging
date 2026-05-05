@@ -241,4 +241,162 @@ class CryptoServiceTest < ActiveSupport::TestCase
       CryptoService.decrypt_private_key(truncated, "test_password")
     end
   end
+  # ======================================
+  # Message Encryption Tests
+  # ======================================
+
+  test "encrypt_message returns hash with required keys" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+    private_key_pem = CryptoService.decrypt_private_key(keys[:encrypted_private_key], "test_password")
+
+    result = CryptoService.encrypt_message("Hello, World!", public_key)
+
+    assert_instance_of Hash, result
+    assert result.key?(:ciphertext), "Result should have :ciphertext key"
+    assert result.key?(:encrypted_key), "Result should have :encrypted_key key"
+    assert result.key?(:nonce), "Result should have :nonce key"
+    assert result.key?(:auth_tag), "Result should have :auth_tag key"
+  end
+
+  test "encrypt_message produces Base64 encoded outputs" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+
+    result = CryptoService.encrypt_message("Test message", public_key)
+
+    # All outputs should be valid Base64
+    assert_nothing_raised do
+      Base64.strict_decode64(result[:ciphertext])
+      Base64.strict_decode64(result[:encrypted_key])
+      Base64.strict_decode64(result[:nonce])
+      Base64.strict_decode64(result[:auth_tag])
+    end
+  end
+
+  test "encrypt_message roundtrip preserves original message" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+    private_key_pem = CryptoService.decrypt_private_key(keys[:encrypted_private_key], "test_password")
+
+    original_message = "This is a secret message for testing encryption."
+    encrypted = CryptoService.encrypt_message(original_message, public_key)
+    decrypted = CryptoService.decrypt_message(encrypted, private_key_pem)
+
+    assert_equal original_message, decrypted, "Decrypted message should match original"
+  end
+
+  test "encrypt_message handles empty message" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+    private_key_pem = CryptoService.decrypt_private_key(keys[:encrypted_private_key], "test_password")
+
+    original_message = ""
+    encrypted = CryptoService.encrypt_message(original_message, public_key)
+    decrypted = CryptoService.decrypt_message(encrypted, private_key_pem)
+
+    assert_equal original_message, decrypted, "Empty message should be preserved"
+  end
+
+  test "encrypt_message handles special characters and unicode" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+    private_key_pem = CryptoService.decrypt_private_key(keys[:encrypted_private_key], "test_password")
+
+    original_message = "Special chars: !@#$%^&*()  Unicode: 你好世界 🌍"
+    encrypted = CryptoService.encrypt_message(original_message, public_key)
+    decrypted = CryptoService.decrypt_message(encrypted, private_key_pem)
+
+    assert_equal original_message, decrypted, "Special characters and unicode should be preserved"
+  end
+
+  test "encrypt_message produces different ciphertexts for different messages" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+
+    encrypted1 = CryptoService.encrypt_message("Message 1", public_key)
+    encrypted2 = CryptoService.encrypt_message("Message 2", public_key)
+
+    assert_not_equal encrypted1[:ciphertext], encrypted2[:ciphertext],
+      "Different messages should produce different ciphertexts"
+  end
+
+  test "encrypt_message produces different encrypted_keys for different recipients" do
+    keys1 = CryptoService.generate_keys("password1")
+    keys2 = CryptoService.generate_keys("password2")
+
+    message = "Shared message"
+    encrypted1 = CryptoService.encrypt_message(message, keys1[:public_key])
+    encrypted2 = CryptoService.encrypt_message(message, keys2[:public_key])
+
+    assert_not_equal encrypted1[:encrypted_key], encrypted2[:encrypted_key],
+      "Different recipients should have different encrypted keys"
+  end
+
+  test "decrypt_message fails with wrong private key" do
+    keys1 = CryptoService.generate_keys("password1")
+    keys2 = CryptoService.generate_keys("password2")
+    private_key2 = CryptoService.decrypt_private_key(keys2[:encrypted_private_key], "password2")
+
+    message = "Secret message"
+    encrypted = CryptoService.encrypt_message(message, keys1[:public_key])
+
+    assert_raises(OpenSSL::PKey::RSAError) do
+      CryptoService.decrypt_message(encrypted, private_key2)
+    end
+  end
+
+  test "decrypt_message fails with tampered ciphertext" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+    private_key_pem = CryptoService.decrypt_private_key(keys[:encrypted_private_key], "test_password")
+
+    encrypted = CryptoService.encrypt_message("Test message", public_key)
+
+    # Tamper with ciphertext
+    tampered = encrypted.dup
+    tampered[:ciphertext] = Base64.strict_encode64(
+      (Base64.strict_decode64(tampered[:ciphertext])[0].ord ^ 0xFF).chr +
+      Base64.strict_decode64(tampered[:ciphertext])[1..-1]
+    )
+
+    assert_raises(OpenSSL::Cipher::CipherError) do
+      CryptoService.decrypt_message(tampered, private_key_pem)
+    end
+  end
+
+  test "decrypt_message fails with tampered auth_tag" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+    private_key_pem = CryptoService.decrypt_private_key(keys[:encrypted_private_key], "test_password")
+
+    encrypted = CryptoService.encrypt_message("Test message", public_key)
+
+    # Tamper with auth_tag
+    tampered = encrypted.dup
+    tampered[:auth_tag] = Base64.strict_encode64(
+      (Base64.strict_decode64(tampered[:auth_tag])[0].ord ^ 0xFF).chr +
+      Base64.strict_decode64(tampered[:auth_tag])[1..-1]
+    )
+
+    assert_raises(OpenSSL::Cipher::CipherError) do
+      CryptoService.decrypt_message(tampered, private_key_pem)
+    end
+  end
+
+  test "encrypt_message produces valid AES key encryption" do
+    keys = CryptoService.generate_keys("test_password")
+    public_key = keys[:public_key]
+    private_key_pem = CryptoService.decrypt_private_key(keys[:encrypted_private_key], "test_password")
+
+    encrypted = CryptoService.encrypt_message("Test", public_key)
+
+    # The encrypted_key should be decryptable to a 32-byte AES key
+    aes_key = Base64.strict_decode64(encrypted[:encrypted_key])
+    decrypted_aes_key = OpenSSL::PKey::RSA.new(private_key_pem).private_decrypt(
+      aes_key, OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING
+    )
+
+    assert_equal 32, decrypted_aes_key.length, "AES key should be 32 bytes"
+  end
 end
