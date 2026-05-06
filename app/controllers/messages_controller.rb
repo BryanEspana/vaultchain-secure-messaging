@@ -2,7 +2,7 @@ class MessagesController < ApplicationController
   def index
     # Returns messages where the user is either the sender or the recipient
     user_id = params[:user_id]
-    messages = Message.where("sender_id = ? OR recipient_id = ?", user_id, user_id).order(created_at: :desc)
+    messages = Message.where("sender_id = ? OR recipient_id = ?", user_id, user_id).order(created_at: :asc)
 
     render json: { messages: messages }, status: :ok
   end
