@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   post "groups", to: "groups#create"
   post "auth/register", to: "auth#register"
   post "auth/login", to: "auth#login"
+  get "users", to: "users#index"
   get "users/:id/key", to: "users#key"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -13,4 +14,10 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root to: redirect("/login.html")
+  def index
+    # Listar todos los usuarios menos el actual (opcionalmente)
+    # Por ahora listamos todos para facilitar pruebas
+    users = User.select(:id, :display_name, :email)
+    render json: { users: users }, status: :ok
+  end
 end

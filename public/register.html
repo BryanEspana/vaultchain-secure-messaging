@@ -99,8 +99,13 @@
             const password = document.getElementById('password').value;
             const password_confirmation = document.getElementById('password_confirmation').value;
             const msgEl = document.getElementById('message');
+            const btn = e.target.querySelector('button');
             
-            msgEl.textContent = 'Procesando...';
+            // UI loading state
+            btn.disabled = true;
+            const originalBtnText = btn.textContent;
+            btn.textContent = 'Procesando...';
+            msgEl.textContent = '';
             msgEl.className = '';
 
             try {
@@ -110,19 +115,30 @@
                     body: JSON.stringify({ email, display_name, password, password_confirmation })
                 });
                 
-                const data = await response.json();
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.error("Error parsing JSON:", e);
+                }
                 
                 if (response.ok) {
-                    msgEl.textContent = 'Registro exitoso! Redirigiendo...';
+                    msgEl.textContent = '✔ ¡Registro exitoso! Redirigiendo...';
                     msgEl.className = 'success';
-                    setTimeout(() => window.location.href = '/login.html', 2000);
+                    setTimeout(() => window.location.href = '/login.html', 1500);
                 } else {
-                    msgEl.textContent = data.errors ? data.errors.join(', ') : 'Error en el registro';
+                    const errorMsg = data.errors ? data.errors.join(', ') : (data.error || 'Error en el registro');
+                    msgEl.textContent = errorMsg;
                     msgEl.className = 'error';
+                    btn.disabled = false;
+                    btn.textContent = originalBtnText;
                 }
             } catch (err) {
-                msgEl.textContent = 'Error de conexión';
+                console.error("Fetch error:", err);
+                msgEl.textContent = 'Error de conexión. Intenta más tarde.';
                 msgEl.className = 'error';
+                btn.disabled = false;
+                btn.textContent = originalBtnText;
             }
         });
     </script>

@@ -127,31 +127,6 @@
             margin-right: 5px;
             opacity: 0.8;
         }
-        .decrypt-panel {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            gap: 0.75rem;
-            background: rgba(0, 0, 0, 0.16);
-        }
-        .decrypt-panel input {
-            flex-grow: 1;
-            padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            outline: none;
-        }
-        .decrypt-panel button {
-            padding: 0 1rem;
-            border-radius: 0.75rem;
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.45);
-            color: #d1fae5;
-            font-weight: 600;
-            cursor: pointer;
-        }
         .message.encrypted {
             border: 1px solid rgba(16, 185, 129, 0.35);
         }
@@ -225,10 +200,6 @@
                 </div>
             </div>
 
-            <div class="decrypt-panel">
-                <input type="password" id="privateKeyPassword" placeholder="Contraseña para descifrar mensajes recibidos" autocomplete="current-password">
-                <button type="button" id="decryptMessagesBtn">Descifrar</button>
-            </div>
             
             <div class="messages-container" id="messagesContainer">
                 <div class="message received">
@@ -408,40 +379,6 @@
             );
         }
 
-        async function decryptStoredPrivateKey(encryptedPrivateKey, password) {
-            const combined = new Uint8Array(base64ToArrayBuffer(encryptedPrivateKey));
-            const salt = combined.slice(0, 16);
-            const iv = combined.slice(16, 28);
-            const authTag = combined.slice(28, 44);
-            const encryptedPem = combined.slice(44);
-            const passwordKey = await crypto.subtle.importKey(
-                'raw',
-                new TextEncoder().encode(password),
-                'PBKDF2',
-                false,
-                ['deriveKey']
-            );
-            const aesKey = await crypto.subtle.deriveKey(
-                {
-                    name: 'PBKDF2',
-                    salt,
-                    iterations: 100000,
-                    hash: 'SHA-256'
-                },
-                passwordKey,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['decrypt']
-            );
-            const encryptedPemWithTag = concatUint8Arrays(encryptedPem, authTag);
-            const privateKeyBuffer = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv, tagLength: 128 },
-                aesKey,
-                encryptedPemWithTag
-            );
-
-            return new TextDecoder().decode(privateKeyBuffer);
-        }
 
         async function decryptMessageForRecipient(encryptedPayload, recipientPrivateKey) {
             const rawAesKey = await crypto.subtle.decrypt(
@@ -513,45 +450,40 @@
             if (!response.ok) return;
 
             const data = await response.json();
+            const messages = data.messages;
             const container = document.getElementById('messagesContainer');
             container.textContent = '';
 
-            data.messages.forEach((message) => {
-                container.appendChild(renderStoredMessage(message));
-            });
+            // Get private key if available
+            let privateKey = null;
+            const privateKeyPem = sessionStorage.getItem('vc_private_key');
+            if (privateKeyPem) {
+                try {
+                    privateKey = await importRecipientPrivateKey(privateKeyPem);
+                } catch (e) {
+                    console.error("Error importing private key:", e);
+                }
+            }
+
+            for (const message of messages) {
+                const messageElement = renderStoredMessage(message);
+                container.appendChild(messageElement);
+
+                // Auto-decrypt if we have the key
+                if (privateKey && messageElement.classList.contains('received') && messageElement.classList.contains('encrypted')) {
+                    try {
+                        const encryptedPayload = JSON.parse(messageElement.dataset.encryptedPayload);
+                        const plaintext = await decryptMessageForRecipient(encryptedPayload, privateKey);
+                        setMessageContent(messageElement, '🔓', plaintext, 'Descifrado');
+                        messageElement.classList.remove('encrypted');
+                    } catch (e) {
+                        console.error("Auto-decryption failed for a message:", e);
+                    }
+                }
+            }
             container.scrollTop = container.scrollHeight;
         }
 
-        async function decryptReceivedMessages() {
-            const encryptedPrivateKey = localStorage.getItem('vc_encrypted_private_key');
-            const password = document.getElementById('privateKeyPassword').value;
-
-            if (!encryptedPrivateKey) {
-                alert('Vuelve a iniciar sesión para cargar tu llave privada cifrada.');
-                return;
-            }
-
-            if (!password) {
-                alert('Ingresa tu contraseña para recuperar tu llave privada.');
-                return;
-            }
-
-            try {
-                const privateKeyPem = await decryptStoredPrivateKey(encryptedPrivateKey, password);
-                const recipientPrivateKey = await importRecipientPrivateKey(privateKeyPem);
-                const encryptedMessages = document.querySelectorAll('.message.received.encrypted');
-
-                for (const messageElement of encryptedMessages) {
-                    const encryptedPayload = JSON.parse(messageElement.dataset.encryptedPayload);
-                    const plaintext = await decryptMessageForRecipient(encryptedPayload, recipientPrivateKey);
-
-                    setMessageContent(messageElement, '🔓', plaintext, 'Descifrado');
-                    messageElement.classList.remove('encrypted');
-                }
-            } catch (err) {
-                alert('No se pudieron descifrar los mensajes. Revisa tu contraseña y la llave privada.');
-            }
-        }
 
         document.getElementById('messageForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -609,7 +541,6 @@
             }
         });
 
-        document.getElementById('decryptMessagesBtn').addEventListener('click', decryptReceivedMessages);
         loadStoredMessages();
     </script>
 </body>

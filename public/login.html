@@ -175,12 +175,13 @@
             font-size: 0.875rem;
             text-align: center;
             min-height: 2.5rem;
-            display: none;
-            animation: fadeIn 0.3s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
         }
-        #message.error { display: block; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-        #message.success { display: block; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        #message.error { opacity: 1; transform: translateY(0); pointer-events: all; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+        #message.success { opacity: 1; transform: translateY(0); pointer-events: all; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
 
         .divider { text-align: center; margin: 1.5rem 0; color: #334155; font-size: 0.8rem; position: relative; }
         .divider::before, .divider::after {
@@ -247,16 +248,77 @@
     </div>
 
     <script>
+        // Crypto Helpers for Private Key Decryption
+        function base64ToArrayBuffer(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function concatUint8Arrays(...arrays) {
+            const totalLength = arrays.reduce((total, array) => total + array.byteLength, 0);
+            const combined = new Uint8Array(totalLength);
+            let offset = 0;
+            arrays.forEach((array) => {
+                combined.set(array, offset);
+                offset += array.byteLength;
+            });
+            return combined;
+        }
+
+        async function decryptStoredPrivateKey(encryptedPrivateKey, password) {
+            const combined = new Uint8Array(base64ToArrayBuffer(encryptedPrivateKey));
+            const salt = combined.slice(0, 16);
+            const iv = combined.slice(16, 28);
+            const authTag = combined.slice(28, 44);
+            const encryptedPem = combined.slice(44);
+
+            const passwordKey = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+
+            const aesKey = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                },
+                passwordKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+            );
+
+            const encryptedPemWithTag = concatUint8Arrays(encryptedPem, authTag);
+            const privateKeyBuffer = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv, tagLength: 128 },
+                aesKey,
+                encryptedPemWithTag
+            );
+
+            return new TextDecoder().decode(privateKeyBuffer);
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email    = document.getElementById('email').value;
+            const email    = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const msgEl    = document.getElementById('message');
             const btn      = document.getElementById('submitBtn');
 
+            // UI loading state
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span>Autenticando...';
-            msgEl.className = ''; msgEl.style.display = 'none';
+            msgEl.className = '';
+            msgEl.textContent = '';
 
             try {
                 const response = await fetch('/auth/login', {
@@ -264,28 +326,53 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                const data = await response.json();
+
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.error("Error parsing JSON:", e);
+                }
 
                 if (response.ok) {
-                    // Persist session info in localStorage
-                    localStorage.setItem('vc_token', data.token);
-                    localStorage.setItem('vc_user_id', data.user_id);
-                    if (data.encrypted_private_key) {
-                        localStorage.setItem('vc_encrypted_private_key', data.encrypted_private_key);
-                    }
-
-                    msgEl.textContent = '✔ ¡Acceso concedido! Redirigiendo...';
+                    // UI status update
+                    msgEl.textContent = '🗝 Descifrando bóveda personal...';
                     msgEl.className = 'success';
 
-                    setTimeout(() => { window.location.href = '/chat.html'; }, 800);
+                    try {
+                        // Decrypt the private key using the password provided in the form
+                        if (data.encrypted_private_key) {
+                            const decryptedKey = await decryptStoredPrivateKey(data.encrypted_private_key, password);
+                            // Store decrypted key in sessionStorage (lasts only for the session)
+                            sessionStorage.setItem('vc_private_key', decryptedKey);
+                        }
+                        
+                        localStorage.setItem('vc_token', data.token);
+                        localStorage.setItem('vc_user_id', data.user_id);
+                        
+                        msgEl.textContent = '✔ ¡Acceso concedido! Redirigiendo...';
+                        setTimeout(() => { window.location.href = '/chat.html'; }, 800);
+                    } catch (cryptoErr) {
+                        console.error("Decryption error:", cryptoErr);
+                        msgEl.textContent = 'Error al descifrar llaves. ¿Es la contraseña correcta?';
+                        msgEl.className = 'error';
+                        btn.disabled = false;
+                        btn.textContent = 'Ingresar al Vault';
+                    }
                 } else {
-                    msgEl.textContent = data.error || 'Credenciales incorrectas.';
+                    // Mostrar mensaje de error proveniente del servidor o genérico
+                    const errorMsg = data.error || 'Credenciales inválidas. Por favor intenta de nuevo.';
+                    msgEl.textContent = errorMsg;
                     msgEl.className = 'error';
+                    
+                    // Reset botón y limpiar password (mantener email)
                     btn.disabled = false;
                     btn.textContent = 'Ingresar al Vault';
+                    document.getElementById('password').value = '';
                 }
             } catch (err) {
-                msgEl.textContent = 'Error de conexión. Revisa el servidor.';
+                console.error("Fetch error:", err);
+                msgEl.textContent = 'Error de conexión. Revisa que el servidor esté activo.';
                 msgEl.className = 'error';
                 btn.disabled = false;
                 btn.textContent = 'Ingresar al Vault';
