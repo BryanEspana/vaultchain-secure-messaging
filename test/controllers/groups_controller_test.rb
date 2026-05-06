@@ -1,8 +1,10 @@
 require "test_helper"
 
 class GroupsControllerTest < ActionDispatch::IntegrationTest
-  test "should get create" do
-    get groups_create_url
-    assert_response :success
+  test "group creation endpoint is prepared but not implemented" do
+    post "/groups"
+
+    assert_response :not_implemented
+    assert_equal "Endpoint de creación de grupos preparado. Falta lógica criptográfica.", response.parsed_body["message"]
   end
 end

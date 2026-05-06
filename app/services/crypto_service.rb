@@ -28,7 +28,7 @@ class CryptoService
     key = OpenSSL::PKCS5.pbkdf2_hmac(password, salt, 100_000, 32, "SHA256")
 
     cipher.key = key
-    # GCM 12-bytes 
+    # GCM 12-bytes
     iv = OpenSSL::Random.random_bytes(12)
     cipher.iv = iv
 

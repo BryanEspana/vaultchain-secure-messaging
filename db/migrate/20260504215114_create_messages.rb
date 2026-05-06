@@ -16,7 +16,7 @@ class CreateMessages < ActiveRecord::Migration[7.2]
     add_index :messages, :sender_id
     add_index :messages, :recipient_id
     add_index :messages, :group_id
-    
+
     add_foreign_key :messages, :users, column: :sender_id
     add_foreign_key :messages, :users, column: :recipient_id
   end

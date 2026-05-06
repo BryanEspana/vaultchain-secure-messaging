@@ -1,9 +1,9 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  sender_id: 
-  recipient_id: 
-  group_id: 
+  sender: one
+  recipient: two
+  group_id:
   ciphertext: MyText
   encrypted_key: MyText
   nonce: MyString
@@ -11,9 +11,9 @@ one:
   signature: MyText
 
 two:
-  sender_id: 
-  recipient_id: 
-  group_id: 
+  sender: two
+  recipient: one
+  group_id:
   ciphertext: MyText
   encrypted_key: MyText
   nonce: MyString
