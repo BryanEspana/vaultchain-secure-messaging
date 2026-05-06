@@ -349,6 +349,9 @@
                         
                         localStorage.setItem('vc_token', data.token);
                         localStorage.setItem('vc_user_id', data.user_id);
+                        if (data.public_key) {
+                            localStorage.setItem('vc_public_key', data.public_key);
+                        }
                         
                         msgEl.textContent = '✔ ¡Acceso concedido! Redirigiendo...';
                         setTimeout(() => { window.location.href = '/chat.html'; }, 800);

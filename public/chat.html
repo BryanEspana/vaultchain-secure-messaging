@@ -181,13 +181,7 @@
                 <h2>VaultChain</h2>
             </div>
             <div class="contacts-list" id="contactsList">
-                <div class="contact active" data-recipient-id="">
-                    <div class="contact-avatar">SJ</div>
-                    <div class="contact-info">
-                        <div style="font-weight: 600;">Steve Jobs</div>
-                        <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">En línea</div>
-                    </div>
-                </div>
+                <!-- Los contactos se cargarán dinámicamente -->
             </div>
         </div>
         
@@ -283,7 +277,7 @@
             return data.public_key;
         }
 
-        async function encryptMessageForRecipient(plaintext, recipientPublicKeyPem) {
+        async function encryptMessageForRecipients(plaintext, recipients) {
             const textEncoder = new TextEncoder();
             const aesKey = await crypto.subtle.generateKey(
                 { name: 'AES-GCM', length: 256 },
@@ -297,25 +291,32 @@
                 textEncoder.encode(plaintext)
             );
             const rawAesKey = await crypto.subtle.exportKey('raw', aesKey);
-            const recipientKey = await crypto.subtle.importKey(
-                'spki',
-                pemToArrayBuffer(recipientPublicKeyPem),
-                { name: 'RSA-OAEP', hash: 'SHA-256' },
-                false,
-                ['encrypt']
-            );
-            const encryptedKeyBuffer = await crypto.subtle.encrypt(
-                { name: 'RSA-OAEP' },
-                recipientKey,
-                rawAesKey
-            );
+
+            // Encrypt the AES key for each recipient
+            const encryptedKeys = {};
+            for (const [userId, publicKeyPem] of Object.entries(recipients)) {
+                const recipientKey = await crypto.subtle.importKey(
+                    'spki',
+                    pemToArrayBuffer(publicKeyPem),
+                    { name: 'RSA-OAEP', hash: 'SHA-256' },
+                    false,
+                    ['encrypt']
+                );
+                const encryptedKeyBuffer = await crypto.subtle.encrypt(
+                    { name: 'RSA-OAEP' },
+                    recipientKey,
+                    rawAesKey
+                );
+                encryptedKeys[userId] = arrayBufferToBase64(encryptedKeyBuffer);
+            }
+
             const encryptedBytes = new Uint8Array(ciphertextBuffer);
             const authTag = encryptedBytes.slice(encryptedBytes.length - 16);
             const ciphertext = encryptedBytes.slice(0, encryptedBytes.length - 16);
 
             return {
                 ciphertext: arrayBufferToBase64(ciphertext),
-                encrypted_key: arrayBufferToBase64(encryptedKeyBuffer),
+                encrypted_key: JSON.stringify(encryptedKeys), // Store as JSON string
                 nonce: arrayBufferToBase64(nonce),
                 auth_tag: arrayBufferToBase64(authTag)
             };
@@ -381,10 +382,26 @@
 
 
         async function decryptMessageForRecipient(encryptedPayload, recipientPrivateKey) {
+            let encryptedKeyBase64 = '';
+            
+            // Handle both legacy (single string) and new (JSON) formats
+            try {
+                const keys = JSON.parse(encryptedPayload.encrypted_key);
+                const currentUserId = localStorage.getItem('vc_user_id');
+                encryptedKeyBase64 = keys[currentUserId];
+            } catch (e) {
+                // If not JSON, assume it's the legacy single string format
+                encryptedKeyBase64 = encryptedPayload.encrypted_key;
+            }
+
+            if (!encryptedKeyBase64) {
+                throw new Error("No hay una llave cifrada disponible para este usuario.");
+            }
+
             const rawAesKey = await crypto.subtle.decrypt(
                 { name: 'RSA-OAEP' },
                 recipientPrivateKey,
-                base64ToArrayBuffer(encryptedPayload.encrypted_key)
+                base64ToArrayBuffer(encryptedKeyBase64)
             );
             const aesKey = await crypto.subtle.importKey(
                 'raw',
@@ -425,23 +442,71 @@
             const currentUserId = localStorage.getItem('vc_user_id');
             const isReceived = message.recipient_id === currentUserId;
             const messageElement = document.createElement('div');
-            messageElement.className = `message ${isReceived ? 'received encrypted' : 'sent'}`;
+            messageElement.className = `message ${isReceived ? 'received' : 'sent'} encrypted`;
 
-            if (isReceived) {
-                messageElement.dataset.encryptedPayload = JSON.stringify({
-                    ciphertext: message.ciphertext,
-                    encrypted_key: message.encrypted_key,
-                    nonce: message.nonce,
-                    auth_tag: message.auth_tag
-                });
-                setMessageContent(messageElement, '🔒', 'Mensaje cifrado', 'Pendiente de descifrar');
-            } else {
-                setMessageContent(messageElement, '🔒', 'Mensaje enviado cifrado', 'Entregado');
-            }
+            messageElement.dataset.encryptedPayload = JSON.stringify({
+                ciphertext: message.ciphertext,
+                encrypted_key: message.encrypted_key,
+                nonce: message.nonce,
+                auth_tag: message.auth_tag
+            });
+
+            const lockChar = '🔒';
+            const label = isReceived ? 'Mensaje cifrado' : 'Mensaje enviado cifrado';
+            setMessageContent(messageElement, lockChar, label, isReceived ? 'Pendiente' : 'Entregado');
 
             return messageElement;
         }
 
+        async function loadContacts() {
+            const response = await fetch('/users');
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const list = document.getElementById('contactsList');
+            const currentUserId = localStorage.getItem('vc_user_id');
+            
+            list.innerHTML = '';
+            data.users.forEach(user => {
+                if (user.id === currentUserId) return; // No chatear con uno mismo
+
+                const div = document.createElement('div');
+                div.className = 'contact';
+                div.dataset.recipientId = user.id;
+                div.dataset.displayName = user.display_name;
+                
+                const initials = user.display_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                
+                div.innerHTML = `
+                    <div class="contact-avatar">${initials}</div>
+                    <div class="contact-info">
+                        <div style="font-weight: 600;">${user.display_name}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">Disponible</div>
+                    </div>
+                `;
+                
+                div.addEventListener('click', () => {
+                    document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+                    div.classList.add('active');
+                    
+                    // Actualizar el header del chat
+                    document.querySelector('.chat-header .contact-avatar').textContent = initials;
+                    document.querySelector('.chat-header h3').textContent = user.display_name;
+                    
+                    // Limpiar y cargar mensajes
+                    lastMessageCount = 0;
+                    loadStoredMessages();
+                });
+                
+                list.appendChild(div);
+            });
+
+            // Seleccionar el primero por defecto si existe
+            const firstContact = list.querySelector('.contact');
+            if (firstContact) firstContact.click();
+        }
+
+        let lastMessageCount = 0;
         async function loadStoredMessages() {
             const currentUserId = localStorage.getItem('vc_user_id');
             if (!currentUserId) return;
@@ -451,6 +516,11 @@
 
             const data = await response.json();
             const messages = data.messages;
+            
+            // Si no hay mensajes nuevos, no parpadear la UI
+            if (messages.length === lastMessageCount) return;
+            lastMessageCount = messages.length;
+
             const container = document.getElementById('messagesContainer');
             container.textContent = '';
 
@@ -470,7 +540,7 @@
                 container.appendChild(messageElement);
 
                 // Auto-decrypt if we have the key
-                if (privateKey && messageElement.classList.contains('received') && messageElement.classList.contains('encrypted')) {
+                if (privateKey && messageElement.classList.contains('encrypted')) {
                     try {
                         const encryptedPayload = JSON.parse(messageElement.dataset.encryptedPayload);
                         const plaintext = await decryptMessageForRecipient(encryptedPayload, privateKey);
@@ -517,7 +587,19 @@
             // API Call - sender_id is the real logged-in user
             try {
                 const recipientPublicKey = await fetchRecipientPublicKey(recipientId);
-                const encryptedPayload = await encryptMessageForRecipient(text, recipientPublicKey);
+                const senderPublicKey = localStorage.getItem('vc_public_key');
+                
+                if (!senderPublicKey) {
+                    throw new Error("No se encontró tu propia llave pública. Por favor, cierra sesión e inicia de nuevo.");
+                }
+
+                // Recipients for multi-key encryption
+                const recipients = {
+                    [recipientId]: recipientPublicKey,
+                    [senderId]: senderPublicKey
+                };
+
+                const encryptedPayload = await encryptMessageForRecipients(text, recipients);
 
                 const response = await fetch('/messages', {
                     method: 'POST',
@@ -536,12 +618,19 @@
                     msgDiv.querySelector('.message-meta').style.color = '#ef4444';
                 }
             } catch (err) {
-                msgDiv.querySelector('.message-meta').textContent = 'Error de conexión';
+                console.error("Error detallado al enviar:", err);
+                msgDiv.querySelector('.message-meta').textContent = 'Error: ' + err.message;
                 msgDiv.querySelector('.message-meta').style.color = '#ef4444';
             }
         });
 
+        loadContacts();
         loadStoredMessages();
+
+        // Autoload de mensajes cada 1 segundo
+        setInterval(() => {
+            loadStoredMessages();
+        }, 1000);
     </script>
 </body>
 </html>
