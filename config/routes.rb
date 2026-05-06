@@ -1,7 +1,10 @@
 Rails.application.routes.draw do
   post "messages", to: "messages#create"
   get "messages/:user_id", to: "messages#index"
+  get "group_messages/:group_id", to: "messages#group_index"
   post "groups", to: "groups#create"
+  get "groups", to: "groups#index"
+  get "groups/:id/members", to: "groups#members"
   post "auth/register", to: "auth#register"
   post "auth/login", to: "auth#login"
   get "users", to: "users#index"

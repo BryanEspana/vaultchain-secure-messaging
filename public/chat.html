@@ -172,6 +172,119 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+
+        /* Sidebar sections */
+        .sidebar-section-label {
+            padding: 0.5rem 1.5rem 0.25rem;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #475569;
+        }
+        .new-group-btn {
+            margin: 0.75rem 1.25rem;
+            padding: 0.6rem 1rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2));
+            border: 1px solid rgba(139,92,246,0.35);
+            color: #a78bfa;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            width: calc(100% - 2.5rem);
+        }
+        .new-group-btn:hover {
+            background: linear-gradient(135deg, rgba(139,92,246,0.35), rgba(59,130,246,0.35));
+            border-color: rgba(139,92,246,0.6);
+            transform: translateY(-1px);
+        }
+        .group-avatar {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #7c3aed, #db2777);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1rem;
+        }
+        .contact-badge {
+            margin-left: auto;
+            background: rgba(139,92,246,0.25);
+            border: 1px solid rgba(139,92,246,0.4);
+            color: #a78bfa;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+        }
+
+        /* Group modal */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #0f172a;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+            animation: slideUp 0.25s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem; background: linear-gradient(to right, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .modal input[type="text"] {
+            width: 100%; padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white; outline: none;
+            margin-bottom: 1rem;
+            font-family: 'Inter', sans-serif;
+        }
+        .modal input[type="text"]:focus { border-color: #8b5cf6; }
+        .user-checkboxes { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; max-height: 180px; overflow-y: auto; }
+        .user-check-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.6rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .user-check-item:hover { background: rgba(139,92,246,0.15); }
+        .user-check-item input { accent-color: #8b5cf6; width: 16px; height: 16px; }
+        .user-check-item label { color: #cbd5e1; font-size: 0.9rem; cursor: pointer; }
+        .modal-actions { display: flex; gap: 0.75rem; }
+        .modal-btn {
+            flex: 1; padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: none; font-weight: 600; cursor: pointer;
+            font-family: 'Inter', sans-serif; transition: all 0.2s;
+        }
+        .modal-btn.primary { background: linear-gradient(135deg, #7c3aed, #2563eb); color: white; }
+        .modal-btn.primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .modal-btn.secondary { background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* Group header members pills */
+        .member-pills { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.3rem; }
+        .member-pill {
+            font-size: 0.65rem; padding: 2px 8px; border-radius: 999px;
+            background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.35);
+            color: #c4b5fd;
+        }
     </style>
 </head>
 <body>
@@ -181,27 +294,27 @@
                 <h2>VaultChain</h2>
             </div>
             <div class="contacts-list" id="contactsList">
-                <!-- Los contactos se cargarán dinámicamente -->
+                <div class="sidebar-section-label">Contactos</div>
+                <div id="directContactsList"></div>
+                <div class="sidebar-section-label" style="margin-top:0.5rem;">Grupos</div>
+                <button class="new-group-btn" id="newGroupBtn">
+                    <span>＋</span> Nuevo Grupo
+                </button>
+                <div id="groupsList"></div>
             </div>
         </div>
         
         <div class="chat-area">
-            <div class="chat-header">
-                <div class="contact-avatar">SJ</div>
+            <div class="chat-header" id="chatHeader">
+                <div class="contact-avatar" id="chatAvatar">?</div>
                 <div>
-                    <h3 style="font-size: 1.1rem;">Steve Jobs</h3>
-                    <span style="font-size: 0.8rem; opacity: 0.7; color: #10b981;">Conexión Segura E2EE</span>
+                    <h3 style="font-size: 1.1rem;" id="chatName">Selecciona un contacto</h3>
+                    <span style="font-size: 0.8rem; opacity: 0.7; color: #10b981;" id="chatStatus">Conexión Segura E2EE</span>
+                    <div class="member-pills" id="memberPills"></div>
                 </div>
             </div>
 
-            
-            <div class="messages-container" id="messagesContainer">
-                <div class="message received">
-                    <span class="lock-icon"></span> Hola, enviame un mensaje
-                    <span class="message-meta">10:42 AM</span>
-                </div>
-
-            </div>
+            <div class="messages-container" id="messagesContainer"></div>
             
             <form class="input-area" id="messageForm">
                 <input type="text" id="messageInput" placeholder="Escribe un mensaje cifrado..." required autocomplete="off">
@@ -210,7 +323,29 @@
         </div>
     </div>
 
+    <!-- Modal para crear grupo -->
+    <div class="modal-overlay" id="groupModal">
+        <div class="modal">
+            <h3>🔐 Crear Grupo Cifrado</h3>
+            <input type="text" id="groupNameInput" placeholder="Nombre del grupo">
+            <div class="user-checkboxes" id="userCheckboxes"></div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="cancelGroupBtn">Cancelar</button>
+                <button class="modal-btn primary" id="createGroupBtn">Crear Grupo</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Wrapper global para fetch que añade headers necesarios para ngrok
+        async function apiFetch(url, options = {}) {
+            const headers = {
+                'ngrok-skip-browser-warning': '1',
+                ...(options.headers || {})
+            };
+            return fetch(url, { ...options, headers });
+        }
+
         function arrayBufferToBase64(buffer) {
             const bytes = new Uint8Array(buffer);
             let binary = '';
@@ -267,7 +402,7 @@
         }
 
         async function fetchRecipientPublicKey(recipientId) {
-            const response = await fetch(`/users/${recipientId}/key`);
+            const response = await apiFetch(`/users/${recipientId}/key`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -459,11 +594,11 @@
         }
 
         async function loadContacts() {
-            const response = await fetch('/users');
+            const response = await apiFetch('/users');
             if (!response.ok) return;
 
             const data = await response.json();
-            const list = document.getElementById('contactsList');
+            const list = document.getElementById('directContactsList');
             const currentUserId = localStorage.getItem('vc_user_id');
             
             list.innerHTML = '';
@@ -488,13 +623,18 @@
                 div.addEventListener('click', () => {
                     document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
                     div.classList.add('active');
+                    currentChat = { type: 'direct', id: user.id };
                     
                     // Actualizar el header del chat
-                    document.querySelector('.chat-header .contact-avatar').textContent = initials;
-                    document.querySelector('.chat-header h3').textContent = user.display_name;
+                    document.getElementById('chatAvatar').textContent = initials;
+                    document.getElementById('chatAvatar').style.borderRadius = '50%';
+                    document.getElementById('chatName').textContent = user.display_name;
+                    document.getElementById('chatStatus').textContent = 'Conexión Segura E2EE';
+                    document.getElementById('memberPills').innerHTML = '';
                     
                     // Limpiar y cargar mensajes
                     lastMessageCount = 0;
+                    document.getElementById('messagesContainer').textContent = '';
                     loadStoredMessages();
                 });
                 
@@ -502,16 +642,137 @@
             });
 
             // Seleccionar el primero por defecto si existe
-            const firstContact = list.querySelector('.contact');
+            const firstContact = document.getElementById('directContactsList').querySelector('.contact');
             if (firstContact) firstContact.click();
         }
+
+        async function loadGroups() {
+            const currentUserId = localStorage.getItem('vc_user_id');
+            if (!currentUserId) return;
+
+            const response = await apiFetch(`/groups?user_id=${currentUserId}`);
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const list = document.getElementById('groupsList');
+            list.innerHTML = '';
+
+            data.groups.forEach(group => {
+                const div = document.createElement('div');
+                div.className = 'contact';
+                div.dataset.groupId = group.id;
+                div.dataset.groupMembers = JSON.stringify(group.members);
+
+                div.innerHTML = `
+                    <div class="group-avatar">🔐</div>
+                    <div class="contact-info" style="flex:1">
+                        <div style="font-weight: 600;">${group.name}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.2rem;">${group.members.length} miembros</div>
+                    </div>
+                    <span class="contact-badge">Grupo</span>
+                `;
+
+                div.addEventListener('click', () => {
+                    document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+                    div.classList.add('active');
+                    currentChat = { type: 'group', id: group.id, members: group.members };
+
+                    document.getElementById('chatAvatar').textContent = '🔐';
+                    document.getElementById('chatAvatar').style.borderRadius = '12px';
+                    document.getElementById('chatName').textContent = group.name;
+                    document.getElementById('chatStatus').textContent = `Grupo cifrado E2EE • ${group.members.length} miembros`;
+
+                    const pills = document.getElementById('memberPills');
+                    pills.innerHTML = group.members.map(m => `<span class="member-pill">${m.display_name}</span>`).join('');
+
+                    lastMessageCount = 0;
+                    loadStoredMessages();
+                });
+
+                list.appendChild(div);
+            });
+        }
+
+        // Modal: Open
+        document.getElementById('newGroupBtn').addEventListener('click', async () => {
+            const response = await apiFetch('/users');
+            const data = await response.json();
+            const currentUserId = localStorage.getItem('vc_user_id');
+            const checkboxes = document.getElementById('userCheckboxes');
+            checkboxes.innerHTML = '';
+
+            data.users.forEach(user => {
+                if (user.id === currentUserId) return;
+                const item = document.createElement('div');
+                item.className = 'user-check-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="user_${user.id}" value="${user.id}">
+                    <label for="user_${user.id}">${user.display_name} <span style="color:#475569;font-size:0.78rem;">(${user.email})</span></label>
+                `;
+                checkboxes.appendChild(item);
+            });
+
+            document.getElementById('groupModal').classList.add('active');
+            document.getElementById('groupNameInput').value = '';
+        });
+
+        // Modal: Cancel
+        document.getElementById('cancelGroupBtn').addEventListener('click', () => {
+            document.getElementById('groupModal').classList.remove('active');
+        });
+
+        // Modal: Create Group
+        document.getElementById('createGroupBtn').addEventListener('click', async () => {
+            const name = document.getElementById('groupNameInput').value.trim();
+            const checked = [...document.querySelectorAll('#userCheckboxes input:checked')].map(cb => cb.value);
+            const creatorId = localStorage.getItem('vc_user_id');
+
+            if (!name) { alert('Escribe un nombre para el grupo.'); return; }
+            if (checked.length === 0) { alert('Selecciona al menos un miembro.'); return; }
+
+            const btn = document.getElementById('createGroupBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creando...';
+
+            try {
+                const response = await apiFetch('/groups', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, creator_id: creatorId, member_ids: checked })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('groupModal').classList.remove('active');
+                    await loadGroups();
+                    // Auto-select the new group
+                    const newGroup = document.querySelector(`[data-group-id="${data.group.id}"]`);
+                    if (newGroup) newGroup.click();
+                } else {
+                    alert(data.error || 'Error al crear el grupo.');
+                }
+            } catch (err) {
+                alert('Error de conexión al crear el grupo.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Crear Grupo';
+            }
+        });
+
+        // Current chat state: { type: 'direct'|'group', id, members? }
+        let currentChat = null;
 
         let lastMessageCount = 0;
         async function loadStoredMessages() {
             const currentUserId = localStorage.getItem('vc_user_id');
-            if (!currentUserId) return;
+            if (!currentUserId || !currentChat) return;
 
-            const response = await fetch(`/messages/${currentUserId}`);
+            const isGroup = currentChat.type === 'group';
+            const url = isGroup
+                ? `/group_messages/${currentChat.id}`
+                : `/messages/${currentUserId}?other_user_id=${currentChat.id}`;
+
+            const response = await apiFetch(url);
             if (!response.ok) return;
 
             const data = await response.json();
@@ -569,12 +830,11 @@
                 return;
             }
 
-            const recipientId = getRecipientId();
-            if (!recipientId) {
-                alert('Falta configurar el destinatario. Define vc_recipient_id o asigna data-recipient-id al contacto activo.');
+            if (!currentChat) {
+                alert('Selecciona un contacto o grupo primero.');
                 return;
             }
-            
+
             // UI Update (Optimistic)
             const container = document.getElementById('messagesContainer');
             const msgDiv = document.createElement('div');
@@ -583,39 +843,51 @@
             container.appendChild(msgDiv);
             container.scrollTop = container.scrollHeight;
             input.value = '';
-            
-            // API Call - sender_id is the real logged-in user
+
             try {
-                const recipientPublicKey = await fetchRecipientPublicKey(recipientId);
                 const senderPublicKey = localStorage.getItem('vc_public_key');
-                
-                if (!senderPublicKey) {
-                    throw new Error("No se encontró tu propia llave pública. Por favor, cierra sesión e inicia de nuevo.");
-                }
+                if (!senderPublicKey) throw new Error("No se encontró tu propia llave pública. Cierra sesión e inicia de nuevo.");
 
-                // Recipients for multi-key encryption
-                const recipients = {
-                    [recipientId]: recipientPublicKey,
-                    [senderId]: senderPublicKey
-                };
+                if (currentChat.type === 'group') {
+                    // Group message: encrypt for all members
+                    const membersResp = await apiFetch(`/groups/${currentChat.id}/members`);
+                    const membersData = await membersResp.json();
+                    const recipients = {};
+                    membersData.members.forEach(m => { if (m.public_key) recipients[m.id] = m.public_key; });
 
-                const encryptedPayload = await encryptMessageForRecipients(text, recipients);
-
-                const response = await fetch('/messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sender_id: senderId,
-                        recipient_id: recipientId,
-                        ...encryptedPayload
-                    })
-                });
-                
-                if (response.ok) {
-                    msgDiv.querySelector('.message-meta').textContent = 'Entregado ✔';
+                    const encryptedPayload = await encryptMessageForRecipients(text, recipients);
+                    const response = await apiFetch('/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sender_id: senderId, group_id: currentChat.id, ...encryptedPayload })
+                    });
+                    if (response.ok) {
+                        msgDiv.querySelector('.message-meta').textContent = 'Entregado ✔';
+                        lastMessageCount = 0; // force reload
+                    } else {
+                        const err = await response.json();
+                        msgDiv.querySelector('.message-meta').textContent = 'Error: ' + (err.error || 'al enviar');
+                        msgDiv.querySelector('.message-meta').style.color = '#ef4444';
+                    }
                 } else {
-                    msgDiv.querySelector('.message-meta').textContent = 'Error al enviar';
-                    msgDiv.querySelector('.message-meta').style.color = '#ef4444';
+                    // Direct message
+                    const recipientId = currentChat.id;
+                    const recipientPublicKey = await fetchRecipientPublicKey(recipientId);
+                    const recipients = { [recipientId]: recipientPublicKey, [senderId]: senderPublicKey };
+                    const encryptedPayload = await encryptMessageForRecipients(text, recipients);
+
+                    const response = await apiFetch('/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sender_id: senderId, recipient_id: recipientId, ...encryptedPayload })
+                    });
+                    if (response.ok) {
+                        msgDiv.querySelector('.message-meta').textContent = 'Entregado ✔';
+                        lastMessageCount = 0;
+                    } else {
+                        msgDiv.querySelector('.message-meta').textContent = 'Error al enviar';
+                        msgDiv.querySelector('.message-meta').style.color = '#ef4444';
+                    }
                 }
             } catch (err) {
                 console.error("Error detallado al enviar:", err);
@@ -625,11 +897,12 @@
         });
 
         loadContacts();
-        loadStoredMessages();
+        loadGroups();
 
         // Autoload de mensajes cada 1 segundo
         setInterval(() => {
             loadStoredMessages();
+            loadGroups();
         }, 1000);
     </script>
 </body>

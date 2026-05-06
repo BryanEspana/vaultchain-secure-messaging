@@ -10,10 +10,28 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_04_215114) do
+ActiveRecord::Schema[7.2].define(version: 2026_05_06_004500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
+
+  create_table "group_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "group_id", null: false
+    t.uuid "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["group_id", "user_id"], name: "index_group_members_on_group_id_and_user_id", unique: true
+    t.index ["group_id"], name: "index_group_members_on_group_id"
+    t.index ["user_id"], name: "index_group_members_on_user_id"
+  end
+
+  create_table "groups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "name", null: false
+    t.uuid "creator_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_groups_on_creator_id"
+  end
 
   create_table "messages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "sender_id", null: false
@@ -43,6 +61,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_04_215114) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "group_members", "groups"
+  add_foreign_key "group_members", "users"
+  add_foreign_key "groups", "users", column: "creator_id"
   add_foreign_key "messages", "users", column: "recipient_id"
   add_foreign_key "messages", "users", column: "sender_id"
 end

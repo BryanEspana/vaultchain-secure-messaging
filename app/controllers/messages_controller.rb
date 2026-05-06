@@ -1,9 +1,25 @@
 class MessagesController < ApplicationController
   def index
-    # Returns messages where the user is either the sender or the recipient
     user_id = params[:user_id]
-    messages = Message.where("sender_id = ? OR recipient_id = ?", user_id, user_id).order(created_at: :asc)
+    other_user_id = params[:other_user_id]
+    
+    if other_user_id.present?
+      # Filtramos la conversación específica entre dos usuarios
+      messages = Message.where(
+        "(sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?)",
+        user_id, other_user_id, other_user_id, user_id
+      ).order(created_at: :asc)
+    else
+      # Fallback: todos los mensajes del usuario (sent o received)
+      messages = Message.where("sender_id = ? OR recipient_id = ?", user_id, user_id).order(created_at: :asc)
+    end
 
+    render json: { messages: messages }, status: :ok
+  end
+
+  def group_index
+    group_id = params[:group_id]
+    messages = Message.where(group_id: group_id).order(created_at: :asc)
     render json: { messages: messages }, status: :ok
   end
 
