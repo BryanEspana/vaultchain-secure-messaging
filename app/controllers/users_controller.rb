@@ -12,4 +12,9 @@ class UsersController < ApplicationController
       render json: { error: "Usuario no encontrado" }, status: :not_found
     end
   end
+  def index
+    # Listamos todos los usuarios para facilitar pruebas en el chat
+    users = User.select(:id, :display_name, :email)
+    render json: { users: users }, status: :ok
+  end
 end
