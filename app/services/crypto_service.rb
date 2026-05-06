@@ -115,4 +115,67 @@ class CryptoService
 
     decrypt_message(encrypted_data, recipient_private_key_pem)
   end
+
+  # Hybrid encryption for group messages: AES-256-GCM for message, RSA-OAEP for AES key (per member)
+  # members_public_keys: Hash of { member_id => public_key_pem }
+  def self.encrypt_group_message(plaintext, members_public_keys)
+    # Generate ephemeral AES-256 key
+    aes_key = OpenSSL::Random.random_bytes(32)
+
+    # Encrypt message with AES-256-GCM (once for all members)
+    cipher = OpenSSL::Cipher.new("aes-256-gcm")
+    cipher.encrypt
+    cipher.key = aes_key
+    nonce = OpenSSL::Random.random_bytes(12) # GCM nonce is 12 bytes
+    cipher.iv = nonce
+
+    ciphertext = cipher.update(plaintext) + cipher.final
+    auth_tag = cipher.auth_tag
+
+    # Encrypt AES key with each member's public key using RSA-OAEP
+    encrypted_keys = {}
+    members_public_keys.each do |member_id, public_key_pem|
+      rsa_public_key = OpenSSL::PKey::RSA.new(public_key_pem)
+      encrypted_key = rsa_public_key.public_encrypt(aes_key, OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING)
+      encrypted_keys[member_id.to_s] = Base64.strict_encode64(encrypted_key)
+    end
+
+    {
+      ciphertext: Base64.strict_encode64(ciphertext),
+      encrypted_keys: encrypted_keys,
+      nonce: Base64.strict_encode64(nonce),
+      auth_tag: Base64.strict_encode64(auth_tag)
+    }
+  end
+
+  # Group message decryption for a specific member:
+  # RSA-OAEP recovers the AES key using member's private key, then AES-256-GCM recovers the message.
+  def self.decrypt_group_message(encrypted_data, member_id, member_private_key_pem)
+    ciphertext = Base64.strict_decode64(encrypted_data.fetch(:ciphertext) { encrypted_data.fetch("ciphertext") })
+    encrypted_keys = encrypted_data.fetch(:encrypted_keys) { encrypted_data.fetch("encrypted_keys") }
+    nonce = Base64.strict_decode64(encrypted_data.fetch(:nonce) { encrypted_data.fetch("nonce") })
+    auth_tag = Base64.strict_decode64(encrypted_data.fetch(:auth_tag) { encrypted_data.fetch("auth_tag") })
+
+    # Get the encrypted key for this member
+    member_id_str = member_id.to_s
+    encrypted_key = Base64.strict_decode64(encrypted_keys[member_id_str])
+
+    rsa_private_key = OpenSSL::PKey::RSA.new(member_private_key_pem)
+    aes_key = rsa_private_key.private_decrypt(encrypted_key, OpenSSL::PKey::RSA::PKCS1_OAEP_PADDING)
+
+    cipher = OpenSSL::Cipher.new("aes-256-gcm")
+    cipher.decrypt
+    cipher.key = aes_key
+    cipher.iv = nonce
+    cipher.auth_tag = auth_tag
+
+    cipher.update(ciphertext) + cipher.final
+  end
+
+  def self.decrypt_group_message_with_password(encrypted_data, member_id, encrypted_private_key, password)
+    member_private_key_pem = decrypt_private_key(encrypted_private_key, password)
+
+    decrypt_group_message(encrypted_data, member_id, member_private_key_pem)
+  end
+
 end
