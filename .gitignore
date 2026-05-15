@@ -35,3 +35,4 @@
 # Ignore planning documents and original requirement doc
 .planning/
 Proyecto 2.docx
+*.claude/
