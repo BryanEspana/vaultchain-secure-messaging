@@ -10,245 +10,244 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #080b14;
+            background: #0d1117;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #e6edf3;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            width: 56px;
+            height: 56px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            color: #fff;
         }
 
-        /* Animated background blobs */
-        .bg {
-            position: fixed; inset: 0; z-index: 0;
-            overflow: hidden;
-        }
-        .blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.25;
-            animation: float 8s ease-in-out infinite;
-        }
-        .blob-1 { width: 500px; height: 500px; background: #3b82f6; top: -150px; left: -150px; animation-delay: 0s; }
-        .blob-2 { width: 400px; height: 400px; background: #8b5cf6; bottom: -100px; right: -100px; animation-delay: 3s; }
-        .blob-3 { width: 300px; height: 300px; background: #06b6d4; top: 50%; left: 55%; animation-delay: 1.5s; }
-        @keyframes float {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-30px) scale(1.05); }
+        .brand-icon svg {
+            width: 28px;
+            height: 28px;
+            color: #3b82f6;
         }
 
-        .page-wrapper {
-            position: relative; z-index: 1;
-            display: flex;
-            align-items: center;
-            gap: 4rem;
-            padding: 2rem;
-            max-width: 900px;
+        .brand-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #e6edf3;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-tagline {
+            font-size: 0.875rem;
+            color: #8b949e;
+        }
+
+        .card {
             width: 100%;
+            max-width: 380px;
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 12px;
+            padding: 1.75rem;
         }
 
-        /* Left branding */
-        .branding {
-            flex: 1;
-            display: none;
-        }
-        @media (min-width: 768px) { .branding { display: block; } }
-
-        .logo-icon {
-            width: 60px; height: 60px;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem;
+        .separator {
+            height: 1px;
+            background: #21262d;
             margin-bottom: 1.5rem;
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
         }
-        .branding h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            line-height: 1.2;
-            background: linear-gradient(to right, #e2e8f0, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+
+        .field {
             margin-bottom: 1rem;
         }
-        .branding p { color: #64748b; font-size: 1rem; line-height: 1.6; max-width: 320px; }
 
-        .features { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
-        .feature {
-            display: flex; align-items: center; gap: 0.75rem;
-            color: #94a3b8; font-size: 0.9rem;
-        }
-        .feature-icon {
-            width: 32px; height: 32px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem; flex-shrink: 0;
-        }
-
-        /* Card */
-        .card {
-            flex-shrink: 0;
-            width: 100%;
-            max-width: 420px;
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 1.5rem;
-            padding: 2.5rem;
-            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-        }
-
-        .card-title {
-            font-size: 1.4rem;
-            font-weight: 700;
+        .field-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 0.4rem;
-            color: #f1f5f9;
         }
-        .card-subtitle { font-size: 0.875rem; color: #64748b; margin-bottom: 2rem; }
 
-        .input-group { margin-bottom: 1.25rem; }
-        .input-group label {
+        .field label {
             display: block;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #94a3b8;
-            margin-bottom: 0.5rem;
-            letter-spacing: 0.05em;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #8b949e;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .field-row label { margin-bottom: 0; }
+
+        .forgot-link {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #3b82f6;
+            text-decoration: none;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
         }
-        .input-group input {
+        .forgot-link:hover { text-decoration: underline; }
+
+        .field input {
             width: 100%;
-            padding: 0.875rem 1rem;
-            border-radius: 0.75rem;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #f1f5f9;
-            font-size: 0.95rem;
+            padding: 0.625rem 0.875rem;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 7px;
+            color: #e6edf3;
+            font-size: 0.9rem;
             font-family: 'Inter', sans-serif;
             outline: none;
-            transition: all 0.25s ease;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .input-group input::placeholder { color: #334155; }
-        .input-group input:focus {
+        .field input::placeholder { color: #484f58; }
+        .field input:focus {
             border-color: #3b82f6;
-            background: rgba(59, 130, 246, 0.05);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
-        .btn {
+        .btn-signin {
             width: 100%;
-            padding: 0.9rem;
-            border-radius: 0.75rem;
-            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            padding: 0.7rem 1rem;
+            margin-top: 0.5rem;
+            background: #3b82f6;
             border: none;
-            color: white;
+            border-radius: 7px;
+            color: #fff;
+            font-size: 0.9rem;
             font-weight: 600;
-            font-size: 0.95rem;
             font-family: 'Inter', sans-serif;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 0.5rem;
-            position: relative;
-            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background 0.2s, opacity 0.2s;
         }
-        .btn::after {
+        .btn-signin:hover { background: #2563eb; }
+        .btn-signin:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1.25rem 0;
+            color: #484f58;
+            font-size: 0.75rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .divider::before, .divider::after {
             content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(255,255,255,0);
-            transition: background 0.2s;
+            flex: 1;
+            height: 1px;
+            background: #21262d;
         }
-        .btn:hover::after { background: rgba(255,255,255,0.08); }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(124, 58, 237, 0.4); }
-        .btn:active { transform: translateY(0); }
-        .btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
         #message {
-            margin-top: 1rem;
-            padding: 0.75rem 1rem;
-            border-radius: 0.6rem;
-            font-size: 0.875rem;
-            text-align: center;
-            min-height: 2.5rem;
+            margin-top: 0.875rem;
+            padding: 0.625rem 0.875rem;
+            border-radius: 7px;
+            font-size: 0.825rem;
             opacity: 0;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
+            transform: translateY(-6px);
+            transition: all 0.25s ease;
             pointer-events: none;
         }
-        #message.error { opacity: 1; transform: translateY(0); pointer-events: all; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-        #message.success { opacity: 1; transform: translateY(0); pointer-events: all; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+        #message.error  { opacity: 1; transform: translateY(0); pointer-events: all; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #f87171; }
+        #message.success { opacity: 1; transform: translateY(0); pointer-events: all; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.25); color: #4ade80; }
 
-        .divider { text-align: center; margin: 1.5rem 0; color: #334155; font-size: 0.8rem; position: relative; }
-        .divider::before, .divider::after {
-            content: ''; position: absolute; top: 50%;
-            width: 40%; height: 1px; background: rgba(255,255,255,0.07);
+        .footer-link {
+            margin-top: 1.25rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #8b949e;
         }
-        .divider::before { left: 0; } .divider::after { right: 0; }
-
-        .link { text-align: center; font-size: 0.875rem; color: #64748b; }
-        .link a { color: #818cf8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
-        .link a:hover { color: #a5b4fc; }
+        .footer-link a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .footer-link a:hover { text-decoration: underline; }
 
         .spinner {
-            display: inline-block; width: 14px; height: 14px;
-            border: 2px solid rgba(255,255,255,0.3);
+            display: inline-block;
+            width: 13px;
+            height: 13px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: white;
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
-            margin-right: 6px; vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div class="bg">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
+
+    <div class="brand">
+        <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+        <h1 class="brand-name">VaultChain</h1>
+        <p class="brand-tagline">Mensajería cifrada de extremo a extremo</p>
     </div>
 
-    <div class="page-wrapper">
-        <div class="branding">
-            <div class="logo-icon">🔐</div>
-            <h1>Mensajería cifrada de extremo a extremo.</h1>
-            <p>VaultChain protege cada mensaje con criptografía de grado militar. Nadie más que tú y tu destinatario puede leerlos.</p>
-            <div class="features">
-                <div class="feature"><div class="feature-icon">🛡️</div>Cifrado RSA-2048 + AES-256-GCM</div>
-                <div class="feature"><div class="feature-icon">🔑</div>Llaves privadas protegidas por tu contraseña</div>
-                <div class="feature"><div class="feature-icon">⛓️</div>Trazabilidad en Blockchain local</div>
+    <div class="card">
+        <div class="separator"></div>
+
+        <form id="loginForm">
+            <div class="field">
+                <label for="email">Correo electrónico</label>
+                <input type="email" id="email" placeholder="nombre@empresa.com" required autocomplete="email">
             </div>
-        </div>
 
-        <div class="card">
-            <h2 class="card-title">Bienvenido de vuelta</h2>
-            <p class="card-subtitle">Ingresa tus credenciales para acceder.</p>
-
-            <form id="loginForm">
-                <div class="input-group">
-                    <label for="email">Correo electrónico</label>
-                    <input type="email" id="email" placeholder="tu@email.com" required autocomplete="email">
-                </div>
-                <div class="input-group">
+            <div class="field">
+                <div class="field-row">
                     <label for="password">Contraseña</label>
-                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    <a href="#" class="forgot-link">¿Olvidaste?</a>
                 </div>
-                <button type="submit" class="btn" id="submitBtn">Ingresar al Vault</button>
-            </form>
+                <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+            </div>
 
-            <div id="message"></div>
+            <button type="submit" class="btn-signin" id="submitBtn">
+                Ingresar &rarr;
+            </button>
+        </form>
 
-            <div class="divider">¿Nuevo aquí?</div>
-            <div class="link"><a href="/register.html">Crear una cuenta segura</a></div>
+        <div id="message"></div>
+
+        <div class="divider">O continúa con</div>
+
+        <div class="footer-link" style="margin-top:0;">
+            <a href="/register.html">Crear una cuenta nueva</a>
         </div>
+    </div>
+
+    <div class="footer-link">
+        ¿Nuevo en VaultChain? <a href="/register.html">Crear una cuenta</a>
     </div>
 
     <script>
-        // Crypto Helpers for Private Key Decryption
         function base64ToArrayBuffer(base64) {
             const binary = atob(base64);
             const bytes = new Uint8Array(binary.length);
@@ -314,9 +313,8 @@
             const msgEl    = document.getElementById('message');
             const btn      = document.getElementById('submitBtn');
 
-            // UI loading state
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span>Autenticando...';
+            btn.innerHTML = '<span class="spinner"></span> Autenticando...';
             msgEl.className = '';
             msgEl.textContent = '';
 
@@ -335,42 +333,36 @@
                 }
 
                 if (response.ok) {
-                    // UI status update
-                    msgEl.textContent = '🗝 Descifrando bóveda personal...';
+                    msgEl.textContent = 'Descifrando bóveda personal...';
                     msgEl.className = 'success';
 
                     try {
-                        // Decrypt the private key using the password provided in the form
                         if (data.encrypted_private_key) {
                             const decryptedKey = await decryptStoredPrivateKey(data.encrypted_private_key, password);
-                            // Store decrypted key in sessionStorage (lasts only for the session)
                             sessionStorage.setItem('vc_private_key', decryptedKey);
                         }
-                        
+
                         localStorage.setItem('vc_token', data.token);
                         localStorage.setItem('vc_user_id', data.user_id);
                         if (data.public_key) {
                             localStorage.setItem('vc_public_key', data.public_key);
                         }
-                        
-                        msgEl.textContent = '✔ ¡Acceso concedido! Redirigiendo...';
+
+                        msgEl.textContent = 'Acceso concedido. Redirigiendo...';
                         setTimeout(() => { window.location.href = '/chat.html'; }, 800);
                     } catch (cryptoErr) {
                         console.error("Decryption error:", cryptoErr);
                         msgEl.textContent = 'Error al descifrar llaves. ¿Es la contraseña correcta?';
                         msgEl.className = 'error';
                         btn.disabled = false;
-                        btn.textContent = 'Ingresar al Vault';
+                        btn.innerHTML = 'Ingresar &rarr;';
                     }
                 } else {
-                    // Mostrar mensaje de error proveniente del servidor o genérico
                     const errorMsg = data.error || 'Credenciales inválidas. Por favor intenta de nuevo.';
                     msgEl.textContent = errorMsg;
                     msgEl.className = 'error';
-                    
-                    // Reset botón y limpiar password (mantener email)
                     btn.disabled = false;
-                    btn.textContent = 'Ingresar al Vault';
+                    btn.innerHTML = 'Ingresar &rarr;';
                     document.getElementById('password').value = '';
                 }
             } catch (err) {
@@ -378,7 +370,7 @@
                 msgEl.textContent = 'Error de conexión. Revisa que el servidor esté activo.';
                 msgEl.className = 'error';
                 btn.disabled = false;
-                btn.textContent = 'Ingresar al Vault';
+                btn.innerHTML = 'Ingresar &rarr;';
             }
         });
     </script>
