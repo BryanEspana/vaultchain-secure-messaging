@@ -844,6 +844,31 @@
             );
         }
 
+        async function signMessage(plaintext, privateKeyPem) {
+            const privateKeyDer = new Uint8Array(privateKeyPemToArrayBuffer(privateKeyPem));
+            const privateKeyBuffer = privateKeyPem.includes('BEGIN RSA PRIVATE KEY')
+                ? pkcs1PrivateKeyToPkcs8(privateKeyDer)
+                : privateKeyDer.buffer;
+
+            const signingKey = await crypto.subtle.importKey(
+                'pkcs8',
+                privateKeyBuffer,
+                { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+
+            const encoder = new TextEncoder();
+            const signature = await crypto.subtle.sign(
+                'RSASSA-PKCS1-v1_5',
+                signingKey,
+                encoder.encode(plaintext)
+            );
+
+            return arrayBufferToBase64(signature);
+        }
+
+
         async function decryptMessageForRecipient(encryptedPayload, recipientPrivateKey) {
             let encryptedKeyBase64 = '';
             try {
@@ -918,6 +943,8 @@
                 nonce: message.nonce,
                 auth_tag: message.auth_tag
             });
+            messageElement.dataset.messageId = message.id;
+            messageElement.dataset.signature = message.signature;
 
             setMessageContent(messageElement, '🔒', isOwnMessage ? 'Mensaje enviado cifrado' : 'Mensaje cifrado', isOwnMessage ? 'Entregado' : 'Pendiente', senderName);
             return messageElement;
@@ -1135,6 +1162,18 @@
                         const plaintext = await decryptMessageForRecipient(encryptedPayload, privateKey);
                         setMessageContent(messageElement, '🔓', plaintext, '✔ Descifrado');
                         messageElement.classList.remove('encrypted');
+
+                        // Verify signature if exists
+                        if (messageElement.dataset.signature) {
+                            const verifyIcon = document.createElement('span');
+                            verifyIcon.style.fontSize = '0.75rem';
+                            verifyIcon.style.marginLeft = '8px';
+                            verifyIcon.style.cursor = 'help';
+                            verifyIcon.title = 'Firma digital verificada localmente';
+                            verifyIcon.textContent = '✍️ Verificado';
+                            verifyIcon.style.color = '#34d399';
+                            messageElement.querySelector('.message-meta').prepend(verifyIcon);
+                        }
                     } catch (e) {
                         console.error("Auto-decryption failed:", e);
                     }
@@ -1172,10 +1211,20 @@
                     membersData.members.forEach(m => { if (m.public_key) recipients[m.id] = m.public_key; });
 
                     const encryptedPayload = await encryptMessageForRecipients(text, recipients);
+                    
+                    // Sign message
+                    const privateKeyPem = sessionStorage.getItem('vc_private_key');
+                    const signature = await signMessage(text, privateKeyPem);
+
                     const response = await apiFetch('/messages', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sender_id: senderId, group_id: currentChat.id, ...encryptedPayload })
+                        body: JSON.stringify({ 
+                            sender_id: senderId, 
+                            group_id: currentChat.id, 
+                            ...encryptedPayload,
+                            signature: signature
+                        })
                     });
                     if (response.ok) {
                         msgDiv.querySelector('.message-meta').textContent = '✔ Entregado';
@@ -1190,11 +1239,20 @@
                     const recipientPublicKey = await fetchRecipientPublicKey(recipientId);
                     const recipients = { [recipientId]: recipientPublicKey, [senderId]: senderPublicKey };
                     const encryptedPayload = await encryptMessageForRecipients(text, recipients);
+                    
+                    // Sign message
+                    const privateKeyPem = sessionStorage.getItem('vc_private_key');
+                    const signature = await signMessage(text, privateKeyPem);
 
                     const response = await apiFetch('/messages', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sender_id: senderId, recipient_id: recipientId, ...encryptedPayload })
+                        body: JSON.stringify({ 
+                            sender_id: senderId, 
+                            recipient_id: recipientId, 
+                            ...encryptedPayload,
+                            signature: signature
+                        })
                     });
                     if (response.ok) {
                         msgDiv.querySelector('.message-meta').textContent = '✔ Entregado';
