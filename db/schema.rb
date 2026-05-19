@@ -10,10 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_06_004500) do
+ActiveRecord::Schema[7.2].define(version: 2026_05_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
+
+  create_table "blocks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.integer "index", null: false
+    t.datetime "timestamp", null: false
+    t.uuid "sender_id"
+    t.uuid "recipient_id"
+    t.string "message_hash", null: false
+    t.string "previous_hash", null: false
+    t.integer "nonce", default: 0, null: false
+    t.string "hash", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["hash"], name: "index_blocks_on_hash", unique: true
+    t.index ["index"], name: "index_blocks_on_index", unique: true
+    t.index ["previous_hash"], name: "index_blocks_on_previous_hash"
+  end
 
   create_table "group_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "group_id", null: false
