@@ -16,7 +16,7 @@ class Block < ApplicationRecord
   def compute_hash(nonce_override = nil)
     n  = nonce_override.nil? ? nonce : nonce_override
     ts = timestamp.respond_to?(:to_i) ? timestamp.to_i : timestamp
-    data = [index, ts, message_hash, previous_hash, n].join
+    data = [index, ts, sender_id, recipient_id, message_hash, previous_hash, n].join
     Digest::SHA256.hexdigest(data)
   end
 

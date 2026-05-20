@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "blockchain", to: "blockchain#index"
   get  "blockchain/verify", to: "blockchain#verify"
   post "messages", to: "messages#create"
   get "messages/:id/verify", to: "messages#verify"
