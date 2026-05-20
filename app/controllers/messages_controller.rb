@@ -41,6 +41,13 @@ class MessagesController < ApplicationController
     end
 
     if message.save
+      service = BlockchainService.new
+      Block.create_genesis! if Block.none?
+      service.add_block!(
+        message_hash: Digest::SHA256.hexdigest(message.ciphertext.to_s),
+        sender_id: message.sender_id,
+        recipient_id: message.recipient_id
+      )
       render json: { message: "Mensaje enviado exitosamente", message_id: message.id }, status: :created
     else
       render json: { errors: message.errors.full_messages }, status: :unprocessable_entity
