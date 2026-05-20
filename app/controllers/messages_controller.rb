@@ -41,15 +41,48 @@ class MessagesController < ApplicationController
     end
 
     if message.save
+      service = BlockchainService.new
+      Block.create_genesis! if Block.none?
+      service.add_block!(
+        message_hash: Digest::SHA256.hexdigest(message.ciphertext.to_s),
+        sender_id: message.sender_id,
+        recipient_id: message.recipient_id
+      )
       render json: { message: "Mensaje enviado exitosamente", message_id: message.id }, status: :created
     else
       render json: { errors: message.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
+  def verify
+    message = Message.find(params[:id])
+    sender = message.sender
+    
+    if sender.nil? || sender.public_key.blank?
+      return render json: { error: "No se encontró la llave pública del remitente" }, status: :not_found
+    end
+
+    # La verificación requiere el texto plano. 
+    # En un sistema E2EE real, esto lo haría el cliente.
+    # Aquí lo exponemos como endpoint que recibe el plaintext para la tarea.
+    plaintext = params[:plaintext]
+    
+    if plaintext.blank?
+      return render json: { error: "Se requiere el texto plano para verificar la firma" }, status: :bad_request
+    end
+
+    is_valid = DigitalSignatureService.verify(plaintext, message.signature, sender.public_key)
+
+    render json: { 
+      valid: is_valid,
+      message_id: message.id,
+      sender: sender.display_name
+    }, status: :ok
+  end
+
   private
 
   def message_params
-    params.permit(:sender_id, :recipient_id, :group_id, :ciphertext, :encrypted_key, :nonce, :auth_tag)
+    params.permit(:sender_id, :recipient_id, :group_id, :ciphertext, :encrypted_key, :nonce, :auth_tag, :signature)
   end
 end

@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
+  get "blockchain", to: "blockchain#index"
+  get  "blockchain/verify", to: "blockchain#verify"
   post "messages", to: "messages#create"
+  get "messages/:id/verify", to: "messages#verify"
+
   get "messages/:user_id", to: "messages#index"
   get "group_messages/:group_id", to: "messages#group_index"
   post "groups", to: "groups#create"
@@ -17,10 +21,5 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root to: redirect("/login.html")
-  def index
-    # Listar todos los usuarios menos el actual (opcionalmente)
-    # Por ahora listamos todos para facilitar pruebas
-    users = User.select(:id, :display_name, :email)
-    render json: { users: users }, status: :ok
-  end
 end
+
