@@ -4,14 +4,17 @@ class BlockchainService
     @difficulty = difficulty
   end
 
+  # returns all blocks in order of index
   def all_blocks
     Block.order(:index)
   end
 
+  # returns the last block
   def last_block
     all_blocks.last
   end
 
+  # creates a new block to the chain
   def add_block!(message_hash:, sender_id: nil, recipient_id: nil)
     next_index = (last_block&.index || -1) + 1
     b = Block.new(
@@ -20,15 +23,16 @@ class BlockchainService
       sender_id: sender_id,
       recipient_id: recipient_id,
       message_hash: message_hash,
-      previous_hash: (last_block&.hash || ('0' * 64)),
+      previous_hash: (last_block&.hash || ('0' * 64)), # initialize root block if there's none before
       nonce: 0
     )
-    # mine to meet difficulty
-    b.mine!(difficulty: @difficulty)
+    # compute hash deterministically and persist
+    b.save!
     b
   end
 
   # Verifies the chain: indexes contiguous, previous_hash links, and recomputed hashes match
+  # If they match the block is chained
   def valid_chain?
     prev = nil
     all_blocks.each_with_index do |blk, idx|

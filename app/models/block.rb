@@ -12,6 +12,8 @@ class Block < ApplicationRecord
   validates :previous_hash, presence: true
   validates :nonce, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :hash, presence: true
+  # Ensure basic defaults and compute the block hash before creation.
+  before_validation :set_defaults_and_compute_hash, on: :create
 
   # Compute SHA-256 hash for the block using the canonical field order.
   def compute_hash(nonce_override = nil)
@@ -21,18 +23,10 @@ class Block < ApplicationRecord
     Digest::SHA256.hexdigest(data)
   end
 
-  # Simple proof-of-work miner: finds a nonce such that the hash starts with difficulty zeros.
-  # TODO is this necessary? 
-  def mine!(difficulty: 2, max_attempts: 10_000)
-    target_prefix = '0' * difficulty
-    self.nonce = 0
-    loop do
-      self.hash = compute_hash(nonce)
-      break if hash.start_with?(target_prefix)
-      self.nonce += 1
-      raise "Failed to mine block after #{max_attempts} attempts" if nonce > max_attempts
-    end
-    save!
+  def set_defaults_and_compute_hash
+    self.timestamp ||= Time.now.utc
+    self.nonce ||= 0
+    self.hash = compute_hash(self.nonce)
   end
 
   # Create a genesis block with predictable values.
