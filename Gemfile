@@ -42,3 +42,11 @@ end
 
 
 gem "jwt"
+
+gem "rotp", "~> 6.3"
+gem "rqrcode", "~> 3.2"
+gem "rswag-api", "~> 2.17"
+gem "rswag-ui", "~> 2.17"
+gem "rswag-specs", "~> 2.17"
+
+gem "rspec-rails", "~> 8.0", :groups => [:development, :test]

@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
   get "blockchain", to: "blockchain#index"
   get  "blockchain/verify", to: "blockchain#verify"
   post "messages", to: "messages#create"
@@ -11,6 +13,8 @@ Rails.application.routes.draw do
   get "groups/:id/members", to: "groups#members"
   post "auth/register", to: "auth#register"
   post "auth/login", to: "auth#login"
+  post "auth/mfa/enable", to: "auth#mfa_enable"
+  post "auth/mfa/verify", to: "auth#mfa_verify"
   get "users", to: "users#index"
   get "users/:id/key", to: "users#key"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

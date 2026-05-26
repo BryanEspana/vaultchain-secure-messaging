@@ -1,0 +1,110 @@
+---
+openapi: 3.0.1
+info:
+  title: API V1
+  version: v1
+paths:
+  "/auth/register":
+    post:
+      summary: Registra un nuevo usuario
+      tags:
+      - Auth
+      parameters: []
+      responses:
+        '201':
+          description: usuario creado
+        '422':
+          description: error en creación
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                display_name:
+                  type: string
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+              required:
+              - email
+              - display_name
+              - password
+              - password_confirmation
+  "/auth/login":
+    post:
+      summary: Inicia sesión de usuario
+      tags:
+      - Auth
+      parameters: []
+      responses:
+        '200':
+          description: login exitoso o MFA requerido
+        '401':
+          description: credenciales inválidas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+              - email
+              - password
+  "/auth/mfa/enable":
+    post:
+      summary: Habilita MFA para un usuario
+      tags:
+      - Auth
+      parameters: []
+      responses:
+        '200':
+          description: MFA habilitado
+        '404':
+          description: usuario no encontrado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+              required:
+              - user_id
+  "/auth/mfa/verify":
+    post:
+      summary: Verifica código MFA
+      tags:
+      - Auth
+      parameters: []
+      responses:
+        '200':
+          description: MFA verificado
+        '401':
+          description: código o token inválido
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                temp_token:
+                  type: string
+                code:
+                  type: string
+              required:
+              - temp_token
+              - code
+servers:
+- url: https://{defaultHost}
+  variables:
+    defaultHost:
+      default: www.example.com
