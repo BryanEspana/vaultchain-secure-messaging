@@ -40,3 +40,11 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Ignore tests and unnecessary stuff
+/docker-compose*.yml
+/spec
+/test
+/docs
+/swagger
+/README.md
