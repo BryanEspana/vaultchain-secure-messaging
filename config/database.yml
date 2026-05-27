@@ -80,6 +80,4 @@ test:
 #
 production:
   <<: *default
-  database: vaultchain_secure_messaging_production
-  username: vaultchain_secure_messaging
-  password: <%= ENV["VAULTCHAIN_SECURE_MESSAGING_DATABASE_PASSWORD"] %>
+  url: <%= ENV.fetch("DATABASE_URL") %>
