@@ -47,18 +47,29 @@ class AuthController < ApplicationController
     user = User.find_by(id: params[:user_id])
     return render json: { error: "Usuario no encontrado" }, status: :not_found unless user
 
-    user.totp_secret = ROTP::Base32.random
-    user.save!
-
-    totp = ROTP::TOTP.new(user.totp_secret, issuer: "VaultChain")
+    temp_secret = ROTP::Base32.random
+    totp = ROTP::TOTP.new(temp_secret, issuer: "VaultChain")
     qr_code = RQRCode::QRCode.new(totp.provisioning_uri(user.email))
     qr_base64 = Base64.strict_encode64(qr_code.as_png(size: 200).to_blob)
 
     render json: {
-      message: "MFA habilitado correctamente",
-      totp_secret: user.totp_secret,
+      message: "Escanea el código QR y confirma",
+      temp_secret: temp_secret,
       qr_code_base64: qr_base64
     }, status: :ok
+  end
+
+  def mfa_confirm
+    user = User.find_by(id: params[:user_id])
+    return render json: { error: "Usuario no encontrado" }, status: :not_found unless user
+
+    totp = ROTP::TOTP.new(params[:temp_secret], issuer: "VaultChain")
+    if totp.verify(params[:code], drift_behind: 15)
+      user.update!(totp_secret: params[:temp_secret])
+      render json: { message: "MFA activado exitosamente" }, status: :ok
+    else
+      render json: { error: "Código inválido" }, status: :unauthorized
+    end
   end
 
   def mfa_verify

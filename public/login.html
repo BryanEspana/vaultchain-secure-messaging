@@ -216,17 +216,26 @@
         <div class="separator"></div>
 
         <form id="loginForm">
-            <div class="field">
-                <label for="email">Correo electrónico</label>
-                <input type="email" id="email" placeholder="nombre@empresa.com" required autocomplete="email">
+            <div id="step1">
+                <div class="field">
+                    <label for="email">Correo electrónico</label>
+                    <input type="email" id="email" placeholder="nombre@empresa.com" required autocomplete="email">
+                </div>
+
+                <div class="field">
+                    <div class="field-row">
+                        <label for="password">Contraseña</label>
+                        <a href="#" class="forgot-link">¿Olvidaste?</a>
+                    </div>
+                    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
             </div>
 
-            <div class="field">
-                <div class="field-row">
-                    <label for="password">Contraseña</label>
-                    <a href="#" class="forgot-link">¿Olvidaste?</a>
+            <div id="step2" style="display: none;">
+                <div class="field">
+                    <label for="mfaCode">Código de Autenticación (MFA)</label>
+                    <input type="text" id="mfaCode" placeholder="123456" autocomplete="one-time-code" maxlength="6">
                 </div>
-                <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
             </div>
 
             <button type="submit" class="btn-signin" id="submitBtn">
@@ -306,10 +315,41 @@
             return new TextDecoder().decode(privateKeyBuffer);
         }
 
+        let tempToken = null;
+        let pendingPassword = null;
+
+        async function finalizeLogin(data, password, msgEl, btn) {
+            msgEl.textContent = 'Descifrando bóveda personal...';
+            msgEl.className = 'success';
+
+            try {
+                if (data.encrypted_private_key) {
+                    const decryptedKey = await decryptStoredPrivateKey(data.encrypted_private_key, password);
+                    sessionStorage.setItem('vc_private_key', decryptedKey);
+                }
+
+                localStorage.setItem('vc_token', data.token);
+                localStorage.setItem('vc_user_id', data.user_id);
+                if (data.public_key) {
+                    localStorage.setItem('vc_public_key', data.public_key);
+                }
+
+                msgEl.textContent = 'Acceso concedido. Redirigiendo...';
+                setTimeout(() => { window.location.href = '/chat.html'; }, 800);
+            } catch (cryptoErr) {
+                console.error("Decryption error:", cryptoErr);
+                msgEl.textContent = 'Error al descifrar llaves. ¿Es la contraseña correcta?';
+                msgEl.className = 'error';
+                btn.disabled = false;
+                btn.innerHTML = 'Ingresar &rarr;';
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email    = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
+            const code     = document.getElementById('mfaCode').value.trim();
             const msgEl    = document.getElementById('message');
             const btn      = document.getElementById('submitBtn');
 
@@ -318,6 +358,37 @@
             msgEl.className = '';
             msgEl.textContent = '';
 
+            if (tempToken) {
+                // Step 2: MFA Verify
+                try {
+                    const response = await fetch('/auth/mfa/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ temp_token: tempToken, code: code })
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        await finalizeLogin(data, pendingPassword, msgEl, btn);
+                    } else {
+                        const errorMsg = data.error || 'Código MFA inválido.';
+                        msgEl.textContent = errorMsg;
+                        msgEl.className = 'error';
+                        btn.disabled = false;
+                        btn.innerHTML = 'Verificar Código &rarr;';
+                        document.getElementById('mfaCode').value = '';
+                    }
+                } catch (err) {
+                    console.error("Fetch error:", err);
+                    msgEl.textContent = 'Error de conexión. Revisa que el servidor esté activo.';
+                    msgEl.className = 'error';
+                    btn.disabled = false;
+                    btn.innerHTML = 'Verificar Código &rarr;';
+                }
+                return;
+            }
+
+            // Step 1: Login
             try {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
@@ -333,29 +404,21 @@
                 }
 
                 if (response.ok) {
-                    msgEl.textContent = 'Descifrando bóveda personal...';
-                    msgEl.className = 'success';
-
-                    try {
-                        if (data.encrypted_private_key) {
-                            const decryptedKey = await decryptStoredPrivateKey(data.encrypted_private_key, password);
-                            sessionStorage.setItem('vc_private_key', decryptedKey);
-                        }
-
-                        localStorage.setItem('vc_token', data.token);
-                        localStorage.setItem('vc_user_id', data.user_id);
-                        if (data.public_key) {
-                            localStorage.setItem('vc_public_key', data.public_key);
-                        }
-
-                        msgEl.textContent = 'Acceso concedido. Redirigiendo...';
-                        setTimeout(() => { window.location.href = '/chat.html'; }, 800);
-                    } catch (cryptoErr) {
-                        console.error("Decryption error:", cryptoErr);
-                        msgEl.textContent = 'Error al descifrar llaves. ¿Es la contraseña correcta?';
-                        msgEl.className = 'error';
+                    if (data.mfa_required) {
+                        tempToken = data.temp_token;
+                        pendingPassword = password;
+                        document.getElementById('step1').style.display = 'none';
+                        document.getElementById('step2').style.display = 'block';
+                        document.getElementById('mfaCode').focus();
+                        document.getElementById('email').removeAttribute('required');
+                        document.getElementById('password').removeAttribute('required');
+                        document.getElementById('mfaCode').setAttribute('required', 'true');
+                        msgEl.textContent = 'Ingresa el código MFA de tu aplicación (Google Authenticator)';
+                        msgEl.className = 'success';
                         btn.disabled = false;
-                        btn.innerHTML = 'Ingresar &rarr;';
+                        btn.innerHTML = 'Verificar Código &rarr;';
+                    } else {
+                        await finalizeLogin(data, password, msgEl, btn);
                     }
                 } else {
                     const errorMsg = data.error || 'Credenciales inválidas. Por favor intenta de nuevo.';
